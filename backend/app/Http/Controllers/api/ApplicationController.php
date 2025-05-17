@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreApplicationRequest;
-use App\Models\Application;
+use App\Http\Requests\UpdateApplicationRequest;
+                                 use App\Models\Application;
 use Illuminate\Http\JsonResponse;use Illuminate\Http\Request;
 
 class ApplicationController extends Controller
@@ -13,7 +14,7 @@ class ApplicationController extends Controller
      */
     public function index()
     {
-        //
+        return response()->json(Application::all(), 200);
     }
 
     /**
@@ -37,24 +38,49 @@ class ApplicationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Application $application)
+    public function show($id)
     {
-        //
+        $application = Application::find($id);
+
+        if (!$application) {
+            return response()->json(['message' => 'Application not found.'], 404);
+        }
+
+        return response()->json($application, 200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Application $application)
+    public function update(UpdateApplicationRequest $request, $id)
     {
-        //
+        $application = Application::find($id);
+
+        if (!$application) {
+            return response()->json(['message' => 'Application not found.'], 404);
+        }
+
+        $application->update($request->validated());
+
+        return response()->json([
+            'message' => 'Application updated successfully.',
+            'data' => $application
+        ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Application $application)
+    public function destroy($id)
     {
-        //
+        $application = Application::find($id);
+
+        if (!$application) {
+            return response()->json(['message' => 'Application not found.'], 404);
+        }
+
+        $application->delete();
+
+        return response()->json(['message' => 'Application deleted successfully.'], 200);
     }
 }
