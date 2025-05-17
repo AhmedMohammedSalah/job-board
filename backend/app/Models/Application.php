@@ -1,10 +1,25 @@
 <?php
 
 namespace App\Models;
+// use App\Models\Candidate;
+// use App\Models\Job;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Application extends Model
 {
     //
+    protected $fillable = [
+    'job_id',
+    'candidate_id',
+    'resume_path',
+    'cover_letter',
+    'status' // 'pending', 'reviewed', 'accepted', 'rejected'
+];
+    public function candidate() {
+        return $this-> belongsTo(Candidate::class);
+    }
+    public function job() {
+        return $this-> belongsTo(Job::class);
+    }
 }
