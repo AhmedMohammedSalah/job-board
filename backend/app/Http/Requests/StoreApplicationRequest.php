@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ApplicationStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreApplicationRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class StoreApplicationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +24,11 @@ class StoreApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'job_id' => 'required|exists:jobs,id',
+            'candidate_id' => 'required|exists:candidates,id',
+            'resume_path' => 'required|file|mimes:pdf,doc,docx|max:2048',
+            'cover_letter' => 'required|string|max:255',
+            'status' => [new Enum(ApplicationStatus::class)],
         ];
     }
 }
