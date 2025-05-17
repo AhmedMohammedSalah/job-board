@@ -12,14 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('employers', function (Blueprint $table) {
-            // Explicitly name the foreign key constraint
             $table->unsignedBigInteger('id')->primary();
             $table->foreign('id', 'fk_employers_users_id')
                 ->references('id')
                 ->on('users')
                 ->cascadeOnDelete();
-
-            // Other columns
             $table->string('company_name');
             $table->text('company_description')->nullable();
             $table->string('company_website')->nullable();
