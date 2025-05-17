@@ -7,6 +7,8 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\JobCommentController;
 use App\Http\Controllers\JobController;
+// use ApplicationController
+use App\Http\Controllers\api\CandidateController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -18,6 +20,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::put('/auth/user', [AuthController::class, 'update']);
+    // [AMS] Applications Route
+    Route::get('/recently-applied',[ApplicationController::class,'recentlyApplied']);
+    // [AMS] Candidate ApiResource Route
+    Route::ApiResource ('candidate',CandidateController::class);
+
+
 });
 Route::post('/employers/register', [EmployerController::class, 'register']);
 Route::post('/employers/login', [EmployerController::class, 'login']);
@@ -38,7 +46,7 @@ Route::prefix('jobs')->group(function () {
     Route::put('/{jobId}/comments/{commentId}', [JobCommentController::class, 'update']);
     Route::delete('/{jobId}/comments/{commentId}', [JobCommentController::class, 'destroy']);
     Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
-    
+
 });
 
 Route::prefix('applications')->group(function () {
