@@ -16,6 +16,9 @@ class Job extends Model
         'responsibilities',
         'requirements',
         'category',
+        'benefits',
+        'work_type',
+        'work_type', // 'remote', 'onsite', 'hybrid'
         'location',
         'technologies',
         'work_type',
@@ -37,7 +40,12 @@ class Job extends Model
 
     public function employer()
     {
-        return $this->belongsTo(Employer::class);
+        return $this->belongsTo(Empoloyer::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function applications()
@@ -50,4 +58,4 @@ class Job extends Model
         return $this->hasMany(JobComment::class);
     }
 }
-    
+
