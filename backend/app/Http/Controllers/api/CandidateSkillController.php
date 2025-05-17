@@ -4,8 +4,9 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use \App\Models\Skill;
-class SkillController extends Controller
+// use model candidateSkill
+use App\Models\candidateSkill;
+class CandidateSkillController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -13,8 +14,9 @@ class SkillController extends Controller
     public function index()
     {
         //
-        $skills = Skill::all();
-        return response()->json($skills);
+        $id = Auth()-> id();
+        $candidateSkill = candidateSkill::where('candidate_id', $id)->get();
+        return response()->json($candidateSkill);
     }
 
     /**
@@ -23,15 +25,17 @@ class SkillController extends Controller
     public function store(Request $request)
     {
         //
-        $request -> validate([
-            'name' => 'required|string|max:255|uniqu',
+        $id = Auth()->id();
+        request->validate ([
+            'skill_id' => 'required|integer|exists:skills,id',
+            'level' => 'required|integer|in:1,2,3,4,5'
         ]);
-        $skill = new Skill();
-        $skill-> name = $request-> name;
-        $skill-> save();
-        return response()->
-        json($skill, 201);
-
+        $candidateSkill = new candidateSkill();
+        $candidateSkill-> candidate_id = $id;
+        $candidateSkill-> skill_id = $request->skill_id ;
+        $candidateSkill-> level = $request-> level ;
+        $candidateSkill-> save();
+        return response()-> json($candidateSkill )-> status(201);
     }
 
     /**
@@ -56,5 +60,6 @@ class SkillController extends Controller
     public function destroy(string $id)
     {
         //
+
     }
 }
