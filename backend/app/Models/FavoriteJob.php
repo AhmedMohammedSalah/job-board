@@ -9,4 +9,8 @@ class FavoriteJob extends Model
 {
     /** @use HasFactory<\Database\Factories\FavoriteJobFactory> */
     use HasFactory;
+    protected $fillable = [
+        'user_id',
+        'job_id'
+    ];
 }

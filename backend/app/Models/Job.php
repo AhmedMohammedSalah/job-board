@@ -19,6 +19,7 @@ class Job extends Model
         'requirements',
         'benefits',
         'work_type',
+        'work_type', // 'remote', 'onsite', 'hybrid'
         'location',
         'min_salary',
         'max_salary',
@@ -42,3 +43,4 @@ class Job extends Model
         return $this->hasMany(Application::class);
     }
 }
+
