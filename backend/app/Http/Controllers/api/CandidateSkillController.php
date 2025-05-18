@@ -26,9 +26,8 @@ class CandidateSkillController extends Controller
     {
         //
         $id = Auth()->id();
-        request->validate ([
-            'skill_id' => 'required|integer|exists:skills,id',
-            'level' => 'required|integer|in:1,2,3,4,5'
+        $request->validate ([
+            'skill_id' => 'required|integer|exists:skills,id'
         ]);
         $candidateSkill = new candidateSkill();
         $candidateSkill-> candidate_id = $id;

@@ -1,3 +1,7 @@
+
+<script setup>
+import { RouterLink, RouterView } from "vue-router";
+</script>
 <template>
   <div>
     <AppHeader />
@@ -5,3 +9,5 @@
     <AppFooter />
   </div>
 </template>
+<style >
+</style>

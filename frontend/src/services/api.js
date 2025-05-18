@@ -65,14 +65,14 @@ export default {
     getCandidateSkills() {
       return api.get("/candidate-skills");
     },
-    addSkill ( name ) {
-        return api.post("/skills", { name });
-        },
-        // addCandidateSkill (  skillId ) {
-
-        // }
-    updateProfile ( data ,id ) {
-        return api.put(`candidate/${id}` , data);
-    }
+    addSkill(name) {
+      return api.post("/skills", { name });
+    },
+    addCandidateSkill(skillId, level) {
+      return api.post("/candidate-skills", { skillId, level });
+    },
+    updateProfile(data, id) {
+      return api.put(`candidate/${id}`, data);
+    },
   },
 };
