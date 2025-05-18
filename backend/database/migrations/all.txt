@@ -1,0 +1,201 @@
+-- 1. Insert into Categories
+INSERT INTO categories (name, description) VALUES
+('Ancient History', 'Study of Egyptian ancient civilizations'),
+('Nile Agriculture', 'Farming techniques along the Nile'),
+('Pyramid Engineering', 'Construction of ancient monuments'),
+('Arabic Literature', 'Classic and modern Arabic works'),
+('Tourism Guidance', 'Guiding tourists through landmarks'),
+('Pharaonic Arts', 'Artistry from Pharaonic eras'),
+('Desert Archaeology', 'Excavation in Egyptian deserts'),
+('Coptic Textiles', 'Traditional Coptic weaving'),
+('Islamic Finance', 'Financial systems compliant with Sharia'),
+('Alexandrian Cuisine', 'Mediterranean culinary traditions'),
+('Suez Navigation', 'Maritime operations in Suez'),
+('Cairo Urban Planning', 'City development strategies'),
+('Red Sea Marine Biology', 'Ecosystems of the Red Sea'),
+('Egyptian Law', 'National legal frameworks'),
+('Bedouin Culture', 'Studies of nomadic traditions'),
+('Nubian Languages', 'Languages of Southern Egypt'),
+('Desert Survival Skills', 'Adapting to arid environments'),
+('Hieroglyphic Studies', 'Ancient writing systems'),
+('Modern Egyptian Cinema', 'Film industry insights'),
+('Egyptian Football', 'National sports culture'),
+('Nile Hydrology', 'Water resource management'),
+('Egyptian Pop Music', 'Contemporary music trends'),
+('Pharaonic Medicine', 'Ancient healing practices'),
+('Alexandria Library Sciences', 'Information management'),
+('Egyptian Startups', 'Innovative business ventures'),
+('Sinai Security', 'Regional safety protocols'),
+('Egyptian Jewelry Design', 'Traditional adornment crafting'),
+('Cairo Traffic Management', 'Urban transportation solutions'),
+('Egyptian Education', 'National education systems'),
+('Desert Astronomy', 'Stargazing in arid regions');
+
+-- 2. Insert into Skills
+INSERT INTO skills (name) VALUES
+('Hieroglyphic Translation'),
+('Nile Irrigation Management'),
+('Pyramid Structural Analysis'),
+('Arabic Poetry Composition'),
+('Tour Group Leadership'),
+('Pharaonic Art Restoration'),
+('Desert Excavation Techniques'),
+('Coptic Embroidery'),
+('Islamic Banking Principles'),
+('Alexandrian Seafood Preparation'),
+('Suez Canal Navigation'),
+('Cairo Infrastructure Design'),
+('Coral Reef Conservation'),
+('Egyptian Contract Law'),
+('Bedouin Conflict Resolution'),
+('Nubian Dialect Instruction'),
+('Sandstorm Survival Tactics'),
+('Papyrus Preservation'),
+('Film Production'),
+('Football Talent Scouting'),
+('Water Allocation Planning'),
+('Oud Instrument Mastery'),
+('Ancient Herbal Remedies'),
+('Archive Digitization'),
+('Pitch Deck Preparation'),
+('Border Patrol Operations'),
+('Goldsmithing Techniques'),
+('Traffic Flow Optimization'),
+('Curriculum Development'),
+('Celestial Navigation');
+
+-- 3. Insert into Users (20 candidates + 10 employers)
+INSERT INTO users (name, email, password, role) VALUES
+('Ahmed Mahmoud', 'ahmed.mahmoud@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Fatima Hassan', 'fatima.hassan@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Youssef Ali', 'youssef.ali@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Amina Salah', 'amina.salah@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Karim Nasr', 'karim.nasr@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Laila Abdelrahman', 'laila.abdel@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Omar Khaled', 'omar.khaled@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Noura Mahmoud', 'noura.mahmoud@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Tarek Hussein', 'tarek.hussein@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Dina Farouk', 'dina.farouk@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Hassan Mohamed', 'hassan.moh@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Sara Ahmed', 'sara.ahmed@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Khalid Ibrahim', 'khalid.ibrahim@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Marwa Osman', 'marwa.osman@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Amir Samir', 'amir.samir@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Rania Fawzy', 'rania.fawzy@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Ziad Rafik', 'ziad.rafik@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Nadia Salem', 'nadia.salem@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Fadi Gamal', 'fadi.gamal@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+('Salma Abbas', 'salma.abbas@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'candidate'),
+
+('NileTech Solutions', 'info@niletech.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Cairo Constructors', 'hr@cairoconstruct.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Pharaoh Tours', 'careers@pharaohtours.eg', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Alexandria Maritime', 'jobs@alexmaritime.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Luxor Heritage', 'info@luxorheritage.org', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Sinai Security Group', 'recruitment@ssg.eg', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Red Sea Resorts', 'careers@redsearesorts.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Egyptian FinCorp', 'efc@careers.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Cairo Film Studios', 'talent@cairofilmstudios.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer'),
+('Nubian Crafts Co-op', 'nubiancrafts@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'employer');
+
+-- 4. Insert into Candidates
+INSERT INTO candidates (id, headline, skills, experience_years) VALUES
+(1, 'Ancient History Expert', 'Hieroglyphics, Archaeology', 5),
+(2, 'Tourism Specialist', 'Multilingual Guide', 7),
+(3, 'Civil Engineer', 'Monument Restoration', 3),
+(4, 'Arabic Linguist', 'Poetry, Translation', 10),
+(5, 'Agricultural Researcher', 'Nile Irrigation', 4),
+(6, 'Marine Biologist', 'Red Sea Ecosystems', 8),
+(7, 'Urban Planner', 'Cairo Infrastructure', 6),
+(8, 'Legal Consultant', 'Egyptian Law', 12),
+(9, 'Desert Survival Trainer', 'Navigation, First Aid', 9),
+(10, 'Film Producer', 'Documentary Production', 7),
+(11, 'Financial Analyst', 'Islamic Banking', 5),
+(12, 'Sports Coach', 'Football Training', 4),
+(13, 'Textile Artist', 'Coptic Weaving', 15),
+(14, 'Chef', 'Alexandrian Cuisine', 6),
+(15, 'Astronomer', 'Desert Stargazing', 8),
+(16, 'Startup Founder', 'Tech Innovation', 3),
+(17, 'Security Expert', 'Sinai Operations', 10),
+(18, 'Jewelry Designer', 'Pharaonic Styles', 5),
+(19, 'Educator', 'Curriculum Development', 9),
+(20, 'Musician', 'Oud Performer', 12);
+
+-- 5. Insert into Employers
+INSERT INTO employers (id, company_name, company_description) VALUES
+(21, 'NileTech Solutions', 'Technology solutions for modern Egypt'),
+(22, 'Cairo Constructors', 'Building Egypt\'s future'),
+(23, 'Pharaoh Tours', 'Premium historical tours'),
+(24, 'Alexandria Maritime', 'Mediterranean shipping experts'),
+(25, 'Luxor Heritage', 'Preserving Egyptian legacy'),
+(26, 'Sinai Security Group', 'Comprehensive security services'),
+(27, 'Red Sea Resorts', 'Luxury coastal experiences'),
+(28, 'Egyptian FinCorp', 'Sharia-compliant finance'),
+(29, 'Cairo Film Studios', 'Egyptian cinema production hub'),
+(30, 'Nubian Crafts Co-op', 'Traditional artisan collective');
+
+-- 6. Insert into Jobs
+INSERT INTO jobs (
+    employer_id, 
+    category_id, 
+    title, 
+    slug, 
+    description, 
+    responsibilities, 
+    requirements, 
+    work_type, 
+    location, 
+    deadline,
+    status
+) VALUES
+(21, 1, 'Ancient History Researcher', 
+ 'ancient-history-researcher',
+ 'Research Pharaonic civilization and document findings',
+ 'Conduct field research, analyze artifacts, publish papers',
+ 'MA in Egyptology, 3+ years research experience',
+ 'remote',
+ 'Cairo',
+ '2024-12-31',
+ 'published'),
+
+(22, 3, 'Pyramid Restoration Engineer', 
+ 'pyramid-restoration-engineer',
+ 'Structural restoration of ancient monuments',
+ 'Assess damage, create restoration plans, supervise workers',
+ 'Civil Engineering degree, 5+ years experience',
+ 'onsite',
+ 'Giza',
+ '2024-11-30',
+ 'published'),
+
+(23, 5, 'Senior Tour Guide', 
+ 'senior-tour-guide',
+ 'Lead historical tours in Luxor region',
+ 'Guide tourist groups, explain historical significance',
+ 'Fluency in 3+ languages, tourism certification',
+ 'hybrid',
+ 'Luxor',
+ '2024-10-15',
+ 'published');
+-- 7. Insert into Job_Skill
+INSERT INTO job_skill (job_id, skill_id, level) VALUES
+(1, 1, 'expert'),
+(1, 18, 'intermediate'),
+(2, 3, 'expert'),
+(2, 28, 'beginner');
+
+-- 8. Insert into Candidate_Skills
+INSERT INTO candidate_skills (candidate_id, skill_id, level) VALUES
+(1, 1, 'expert'),
+(1, 18, 'intermediate'),
+(2, 5, 'expert'),
+(2, 25, 'beginner');
+-- 9. Insert into Applications
+INSERT INTO applications (job_id, candidate_id, resume_path, status) VALUES
+(1, 1, '/resumes/ahmed.pdf', 'pending'),
+(2, 3, '/resumes/youssef.pdf', 'reviewed');
+-- 10. Insert into Comments
+INSERT INTO comments (job_id, user_id, content) VALUES
+(1, 1, 'Exciting research opportunity!'),
+(2, 21, 'Looking for qualified engineers');
+

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 // use Illuminate\Support\Facades\Auth;
 // use model job and application
+use App\Models\Application;
 use App\Models\Job;
 
 
@@ -28,9 +29,8 @@ class ApplicationController extends Controller
         }
 
     public function recentlyApplied(Request $request){
-        $user_id = Auth()->id();
-        $candidate_id = $user_id ;
-        $applications = Application::where('candidate_id', $candidate_id)->
+        $id = Auth()->id();
+        $applications = Application::where('candidate_id', $id)->
         orderBy('created_at', 'desc')->get();
         $jobs =[];
         foreach ($applications as $application) {
