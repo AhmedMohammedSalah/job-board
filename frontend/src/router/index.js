@@ -8,7 +8,7 @@ import Login from "../components/auth/Login.vue";
 import page from "../components/auth/page.vue";
 import ForgetPassword from "../components/auth/ForgetPassword.vue";
 import ResetPassword from "../components/auth/ResetPassword.vue";
-
+import CandidateLayout from "../layouts/CandidateLayout.vue";
 const routes = [
   {
     path: "/",
@@ -16,36 +16,52 @@ const routes = [
     component: Home,
   },
   {
-    path: '/register',
-    name: 'Register',
+    path: "/candidate",
+    name: "candidate",
+    component: CandidateLayout,
+    // children: [
+    //   {
+    //     path: "",
+    //     name: "candidate-overview",
+    //     component: CandidateOverview,
+    //   },
+    //   {
+    //     path: "applied-jobs",
+    //     name: "applied-jobs",
+    //     component: AppliedJobs,
+    //   },
+    // ],
+  },
+  {
+    path: "/register",
+    name: "Register",
     component: Register,
   },
   {
-    path: '/login',
-    name: 'Login',
+    path: "/login",
+    name: "Login",
     component: Login,
   },
   {
-    path: '/home',
-    name: 'Home',
+    path: "/home",
+    name: "Home",
     component: Home,
-  },{
-  path: '/page',
-  name: 'Page',
-  component: page,
+  },
+  {
+    path: "/page",
+    name: "Page",
+    component: page,
   },
   {
     path: "/ForgetPassword",
     name: "ForgetPassword",
     component: ForgetPassword,
-  }
-  ,{
+  },
+  {
     path: "/reset-password",
     name: "ResetPassword",
     component: ResetPassword,
-
-  }
-
+  },
 ];
 
 const router = createRouter({

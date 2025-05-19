@@ -1,268 +1,178 @@
-<script setup>
-import { ref, watch } from "vue";
-import { useRouter, useRoute } from "vue-router";
-
-const router = useRouter();
-const route = useRoute();
-const activeItem = ref(route.name); // Initialize to current route name
-
-const menuItems = [
-  { icon: "grid-view", title: "Overview", route: "candidate-overview" },
-  { icon: "briefcase", title: "Applied Jobs", route: "applied-jobs" },
-  { icon: "heart", title: "candidate-saved-jobs", route: "candidate-saved-jobs" },
-  // { icon: 'alarm', title: 'Job Alerts', route: 'candidate-alerts' },
-  { icon: "logout", title: "Logout", route: "logout" },
-];
-
-const navigateTo = async (routeName) => {
-  if (routeName === "logout") {
-    // Handle logout logic
-    return;
-  }
-  if (route.name === routeName) {
-    return; // Prevent redundant navigation
-  }
-  try {
-    await router.push( { name: routeName } );
-    
-    activeItem.value = routeName;
-    // reload the page to reflect the new route
-    window.location.reload();
-  } catch (error) {
-    console.error("Navigation error:", error);
-  }
-};
-
-// Watch for route changes to update activeItem accordingly
-watch(
-  () => route.name,
-  (newName) => {
-    activeItem.value = newName;
-  }
-);
-</script>
-
 <template>
-  <div class="candidate-sidebar">
-    <div class="sidebar-header">
-      <div class="profile-summary">
-        <div class="avatar">
-          <!-- <img src="@/assets/images/avatar-placeholder.png" alt="Candidate Avatar"> -->
-        </div>
-        <!-- <div class="profile-info">
-          <h4>John Doe</h4>
-          <p>UI/UX Designer</p>
-        </div> -->
+  <aside class="sidebar">
+    <!-- Profile Section -->
+    <div class="profile-section">
+      <div class="profile-image">
+        <img :src="user.avatar || '/default-avatar.jpg'" alt="Profile">
+        <span class="online-status"></span>
+      </div>
+      <div class="profile-info">
+        <h4>{{ user.name }}</h4>
+        <p class="text-secondary">{{ user.title }}</p>
       </div>
     </div>
-
-    <div class="sidebar-menu">
-      <div class="menu-section">
-        <h5 class="section-title">Candidate Dashboard</h5>
-        <ul>
-          <li
-            v-for="item in menuItems.slice(0, 5)"
-            :key="item.route"
-            :class="{ active: activeItem === item.route }"
-            @click="navigateTo(item.route)"
-          >
-            <span class="menu-icon">
-              <i :class="`icon-${item.icon}`"></i>
-            </span>
-            <span class="menu-title">{{ item.title }}</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="menu-section">
-        <h5 class="section-title">Account</h5>
-        <ul>
-          <li
-            v-for="item in menuItems.slice(5)"
-            :key="item.route"
-            :class="{ active: activeItem === item.route }"
-            @click="navigateTo(item.route)"
-          >
-            <span class="menu-icon">
-              <i :class="`icon-${item.icon}`"></i>
-            </span>
-            <span class="menu-title">{{ item.title }}</span>
-          </li>
-        </ul>
-      </div>
+    
+    <!-- Navigation Menu -->
+    <nav class="sidebar-menu">
+      <router-link 
+        v-for="item in menuItems" 
+        :key="item.path" 
+        :to="item.path"
+        class="menu-item"
+        active-class="active"
+      >
+        <i :class="item.icon"></i>
+        <span>{{ item.label }}</span>
+        <span v-if="item.badge" class="badge">{{ item.badge }}</span>
+      </router-link>
+    </nav>
+    
+    <!-- Footer Section -->
+    <div class="sidebar-footer">
+      <button class="btn btn-outline btn-sm">
+        <i class="fas fa-cog"></i> Settings
+      </button>
+      <button class="btn btn-outline btn-sm" @click="logout">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
     </div>
-  </div>
+  </aside>
 </template>
 
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const user = ref({
+  name: 'Mohamed Ahmed',
+  title: 'Senior Frontend Developer',
+  avatar: ''
+})
+
+const menuItems = ref([
+  { path: '/candidate/dashboard', label: 'Dashboard', icon: 'fas fa-home' },
+  { path: '/candidate/profile', label: 'My Profile', icon: 'fas fa-user' },
+  { path: '/candidate/jobs', label: 'Job Applications', icon: 'fas fa-briefcase' },
+  { path: '/candidate/saved-jobs', label: 'Saved Jobs', icon: 'fas fa-bookmark', badge: 3 },
+  { path: '/candidate/messages', label: 'Messages', icon: 'fas fa-envelope', badge: 5 },
+  { path: '/candidate/notifications', label: 'Notifications', icon: 'fas fa-bell', badge: 2 },
+  { path: '/candidate/skills', label: 'My Skills', icon: 'fas fa-code' },
+  { path: '/candidate/resume', label: 'My Resume', icon: 'fas fa-file-alt' },
+  { path: '/candidate/settings', label: 'Settings', icon: 'fas fa-cog' }
+])
+
+const logout = () => {
+  // Handle logout logic
+  router.push('/login')
+}
+</script>
+
 <style scoped>
-.candidate-sidebar {
-  width: 280px;
-  height: 100vh;
-  background: #ffffff;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-  position: fixed;
-  left: 0;
-  top: 0;
-  padding: 20px 0;
+.sidebar {
+  padding: var(--space-lg) var(--space-md);
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
-.sidebar-header {
-  padding: 0 20px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.profile-summary {
+.profile-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 15px;
+  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.avatar {
-  width: 50px;
-  height: 50px;
+.profile-image {
+  position: relative;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   overflow: hidden;
+  margin-bottom: var(--space-sm);
 }
 
-.avatar img {
+.profile-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-info h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
+.online-status {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: var(--secondary-color);
+  border: 2px solid var(--bg-primary);
 }
 
-.profile-info p {
-  margin: 5px 0 0;
-  font-size: 13px;
-  color: #6b6b6b;
+.profile-info {
+  text-align: center;
+}
+
+.profile-info h4 {
+  margin-bottom: var(--space-xs);
 }
 
 .sidebar-menu {
   flex: 1;
-  overflow-y: auto;
-  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
-.menu-section {
-  margin-bottom: 25px;
-}
-
-.section-title {
-  padding: 0 20px;
-  font-size: 12px;
-  text-transform: uppercase;
-  color: #999;
-  margin-bottom: 15px;
-  font-weight: 500;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  padding: 10px 20px;
+.menu-item {
   display: flex;
   align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-li:hover {
-  background: #f8f8f8;
-}
-
-li.active {
-  background: #f0f7ff;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
   position: relative;
 }
 
-li.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 3px;
-  background: #1967d2;
+.menu-item:hover {
+  background-color: var(--bg-secondary);
+  color: var(--primary-color);
 }
 
-.menu-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  color: #6b6b6b;
-}
-
-li.active .menu-icon {
-  color: #1967d2;
-}
-
-.menu-title {
-  font-size: 14px;
+.menu-item.active {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
   font-weight: 500;
-  color: #1a1a1a;
 }
 
-li.active .menu-title {
-  color: #1967d2;
-  font-weight: 600;
-}
-
-/* Simple icon representation - replace with actual icon component or font icons */
-[class^="icon-"]::before {
-  font-family: "Material Icons";
-  font-style: normal;
-  font-weight: normal;
-  speak: never;
-  display: inline-block;
-  text-decoration: none;
-  width: 1em;
+.menu-item i {
+  margin-right: var(--space-sm);
+  width: 20px;
   text-align: center;
-  font-variant: normal;
-  text-transform: none;
-  line-height: 1;
-  -webkit-font-smoothing: antialiased;
 }
 
-.icon-grid-view::before {
-  content: "\e8a8";
+.badge {
+  margin-left: auto;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
 }
-.icon-profile::before {
-  content: "\e853";
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
 }
-.icon-briefcase::before {
-  content: "\e8ae";
-}
-.icon-heart::before {
-  content: "\e87e";
-}
-.icon-alarm::before {
-  content: "\e855";
-}
-.icon-message::before {
-  content: "\e0cb";
-}
-.icon-resume::before {
-  content: "\e24a";
-}
-.icon-password::before {
-  content: "\e899";
-}
-.icon-logout::before {
-  content: "\e9ba";
+
+.btn-sm {
+  padding: 0.5rem;
+  font-size: 0.875rem;
 }
 </style>
