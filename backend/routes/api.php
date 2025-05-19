@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\JobCommentController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\EmployerJobController;
 
 // use ApplicationController
 use App\Http\Controllers\api\CandidateController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\api\CandidateController;
 use App\Http\Controllers\api\SkillController;
 // use CandidateSkillController
 use App\Http\Controllers\api\CandidateSkillController;
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -40,13 +42,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // [AMS] Candidate Skills ApiRoute
     Route::ApiResource('candidate-skills', CandidateSkillController::class);
 });
+
+// Employer Public Routes (unchanged)
 Route::post('/employers/register', [EmployerController::class, 'register']);
 Route::post('/employers/login', [EmployerController::class, 'login']);
 
 Route::post('/auth/password/email', [AuthController::class, 'sendResetEmail']);
-Route::post('/auth/password/email', [AuthController::class, 'sendResetEmail']);
 Route::post('/auth/password/reset', [AuthController::class, 'reset']);
-
 
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);
@@ -60,15 +62,32 @@ Route::prefix('jobs')->group(function () {
     Route::put('/{jobId}/comments/{commentId}', [JobCommentController::class, 'update']);
     Route::delete('/{jobId}/comments/{commentId}', [JobCommentController::class, 'destroy']);
     Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
-
 });
 
-Route::prefix('applications')->group(function () {
-    Route::patch('/{applicationId}/status', [ApplicationController::class, 'updateApplicationStatus']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('employers')->group(function () {
+        Route::get('/profile', [EmployerController::class, 'profile']);
+        Route::put('/profile', [EmployerController::class, 'updateProfile']);
+        Route::post('/logo', [EmployerController::class, 'uploadLogo']);
+        Route::get('/dashboard', [EmployerController::class, 'dashboard']);
+    });
+    
+    // Employer Job Management Routes
+    Route::prefix('employer/jobs')->group(function () {
+        Route::post('/', [EmployerJobController::class, 'store']);
+        Route::put('/{jobId}', [EmployerJobController::class, 'update']);
+        Route::delete('/{jobId}', [EmployerJobController::class, 'destroy']);
+        Route::patch('/{jobId}/toggle-active', [EmployerJobController::class, 'toggleActive']);
+        Route::patch('/{jobId}/mark-expired', [EmployerJobController::class, 'markAsExpired']);
+    });
+    
+    Route::prefix('applications')->group(function () {
+        Route::get('/', [ApplicationController::class, 'employerApplications'])->name('employer.applications');
+        Route::patch('/{applicationId}/status', [ApplicationController::class, 'updateApplicationStatus'])
+            ->name('applications.update-status');
+        Route::put('/{applicationId}/accept', [ApplicationController::class, 'acceptApplication'])
+            ->name('applications.accept');
+        Route::put('/{applicationId}/reject', [ApplicationController::class, 'rejectApplication'])
+            ->name('applications.reject');
+    });
 });
-
-
-
-
-
-

@@ -2,23 +2,49 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
+use App\Models\Job;
+use App\Models\Application;
 
-class AppServiceProvider extends ServiceProvider
+class AuthServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * The model to policy mappings for the application.
+     *
+     * @var array<class-string, class-string>
      */
-    public function register(): void
-    {
+    protected $policies = [
         //
-    }
+    ];
 
     /**
-     * Bootstrap any application services.
+     * Register any authentication / authorization services.
      */
     public function boot(): void
     {
-        //
+        Gate::define('manage-job', function (User $user, Job $job) {
+            return $user->employer && $job->employer_id === $user->employer->id;
+        });
+
+        Gate::define('view-applications', function (User $user, Job $job) {
+            return $user->employer && $job->employer_id === $user->employer->id;
+        });
+
+        Gate::define('manage-application', function (User $user, Application $application) {
+            return $user->employer && $application->job->employer_id === $user->employer->id;
+        });
+        
+        Gate::define('accept-application', function (User $user, Application $application) {
+            // Employers can only accept applications for their own jobs
+            return $user->employer && $application->job->employer_id === $user->employer->id;
+        });
+        
+        Gate::define('reject-application', function (User $user, Application $application) {
+            // Employers can only reject applications for their own jobs
+            return $user->employer && $application->job->employer_id === $user->employer->id;
+        });
     }
 }
+     
