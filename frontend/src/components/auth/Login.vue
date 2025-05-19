@@ -136,11 +136,11 @@ const handleLogin = async () => {
       showAlert('success', 'Login successful! Redirecting...')
       setTimeout(() => {
         if (response.data.user.role === 'candidate') {
-          router.push('/home')
+          router.push('/')
         } else if (response.data.user.role === 'employer') {
-          router.push('/home')
+          router.push('/')
         } else {
-          router.push('/home')
+          router.push('/')
         }
       }, 1500)
     }

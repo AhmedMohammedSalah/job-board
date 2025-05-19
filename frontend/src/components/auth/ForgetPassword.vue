@@ -143,7 +143,7 @@ const handleReset = async () => {
   }
 
   try {
-    const response = await axios.post('http://localhost:8000/api/send-reset-email', {
+    const response = await axios.post('http://localhost:8000/api/auth/checkemail', {
       email: email.value
     })
 
@@ -153,6 +153,8 @@ const handleReset = async () => {
     }, 1500)
 
   } catch (error) {
+    console.error(error.response || error) // 👈 أطبع الخطأ هنا
+
     if (error.response && error.response.status === 404) {
       showAlert('danger', 'Email not found in our system')
     } else {
@@ -161,6 +163,7 @@ const handleReset = async () => {
   } finally {
     loading.value = false
   }
+
 }
 </script>
 <style scoped>
