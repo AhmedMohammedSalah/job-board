@@ -51,6 +51,9 @@ Route::post('/auth/password/reset', [AuthController::class, 'reset']);
     Route::post('/jobs/{id}/approve', [JobController::class, 'approveJob'])->name('jobs.approve'); // Approve a job
     Route::post('/jobs/{id}/reject', [JobController::class, 'rejectJob'])->name('jobs.reject'); // Reject a job
 
+//filter
+Route::get('/jobs/filter', [JobController::class, 'filterJobs']);
+
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);
     Route::post('/', [JobController::class, 'store']);

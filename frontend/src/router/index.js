@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 // Import your views
 
 import Home from "../views/Home.vue";
+import candidateHomePage from "../views/candidateHome.vue"
 import Register from "../components/auth/Register.vue";
 import Login from "../components/auth/Login.vue";
 import page from "../components/auth/page.vue";
@@ -43,6 +44,12 @@ const routes = [
     path: "/reset-password",
     name: "ResetPassword",
     component: ResetPassword,
+
+  },
+   ,{
+    path: "/candidateHomePage",
+    name: "candidateHomePage",
+    component: candidateHomePage,
 
   }
 

@@ -220,4 +220,59 @@ class JobController extends Controller
             'is_active' => $job->is_active,
         ]);
     }
+    ///filter
+    public function filterJobs(Request $request)
+{
+    $query = Job::with('category') // Eager load the category relationship
+              ->where('status', 'published');
+
+    // Search filter
+    if ($request->has('search')) {
+        $searchTerm = $request->input('search');
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('title', 'like', '%'.$searchTerm.'%')
+              ->orWhere('description', 'like', '%'.$searchTerm.'%')
+              ->orWhere('location', 'like', '%'.$searchTerm.'%');
+        });
+    }
+
+    // Category filter - now using category_id
+    if ($request->has('category') && $request->input('category') != 'All Category') {
+        $query->whereHas('category', function($q) use ($request) {
+            $q->where('name', $request->input('category'));
+        });
+    }
+
+    // Job Type filter
+    if ($request->has('employment_type')) {
+        $query->where('employment_type', $request->input('employment_type'));
+    }
+
+    // Salary range filter - adjusted for min_salary/max_salary columns
+    if ($request->has('salary_min') || $request->has('salary_max')) {
+        $min = $request->input('salary_min', 0);
+        $max = $request->input('salary_max', PHP_INT_MAX);
+        
+        $query->where(function($q) use ($min, $max) {
+            $q->where(function($q) use ($min, $max) {
+                $q->where('min_salary', '>=', $min)
+                  ->where('min_salary', '<=', $max);
+            })->orWhere(function($q) use ($min, $max) {
+                $q->where('max_salary', '>=', $min)
+                  ->where('max_salary', '<=', $max);
+            });
+        });
+    }
+
+    // Remote job filter
+    if ($request->has('remote_job')) {
+        $query->where('work_type', 'remote');
+    }
+
+    $jobs = $query->orderBy('created_at', 'desc')->paginate(10);
+
+    return response()->json([
+        'jobs' => $jobs,
+    ]);
+}
 }
