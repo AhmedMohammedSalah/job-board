@@ -50,7 +50,7 @@
           </button>
         </div>
 
-        <!-- After Login -->
+     
         <div class="user-profile" v-else>
           <div class="user-info">
             <span class="user-name">Welcome, {{ userName }}</span>
@@ -68,6 +68,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import { 
   BriefcaseIcon,
   MapPinIcon,
@@ -84,15 +85,39 @@ const selectedLocation = ref('India')
 const searchQuery = ref('')
 const isLoggedIn = ref(false)
 const userName = ref('')
+const token = ref(localStorage.getItem('auth_token') || '')
 
-// تحميل حالة تسجيل الدخول عند التحميل
-onMounted(() => {
-  const userData = JSON.parse(localStorage.getItem('user'))
-  if (userData) {
-    isLoggedIn.value = true
-    userName.value = userData.name || userData.username || 'User'
-    console.log('User loaded:', userName.value) // للتأكد من تحميل البيانات
+// Fetch current user data
+const fetchCurrentUser = async () => {
+  if (token.value) {
+    try {
+      const response = await axios.get('http://localhost:8000/api/auth/get_current_user', {
+        headers: { Authorization: `Bearer ${token.value}` }
+      })
+      isLoggedIn.value = true
+      userName.value = response.data.name || 'User'
+      console.log('Current user:', response.data)
+    } catch (error) {
+      console.error('Error fetching user:', error.response ? error.response.data : error.message)
+      isLoggedIn.value = false
+      userName.value = ''
+      localStorage.removeItem('auth_token')
+      token.value = ''
+    }
+  } else {
+    // Fallback to localStorage user data if token is missing
+    const userData = JSON.parse(localStorage.getItem('user'))
+    if (userData) {
+      isLoggedIn.value = true
+      userName.value = userData.name || userData.username || 'User'
+    }
   }
+}
+
+onMounted(() => {
+  token.value = localStorage.getItem('auth_token') || ''
+  fetchCurrentUser()
+  document.addEventListener('click', handleClickOutside)
 })
 
 const locations = [
@@ -128,23 +153,45 @@ const navigateToPostJob = () => {
   router.push('/post-job')
 }
 
-const logout = () => {
-  localStorage.removeItem('user')
-  isLoggedIn.value = false
-  userName.value = ''
-  router.push('/login')
+const logout = async () => {
+  try {
+    // Fetch CSRF cookie for Sanctum (required for POST requests)
+    await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+
+    // Call logout endpoint with token
+    if (token.value) {
+      await axios.post('http://localhost:8000/api/logout', {}, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      })
+    }
+
+    // Clear localStorage and reset state
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    isLoggedIn.value = false
+    userName.value = ''
+    token.value = ''
+    
+    // Redirect to login page
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error.response ? error.response.data : error.message)
+    // Clear state and redirect even if API call fails
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    isLoggedIn.value = false
+    userName.value = ''
+    token.value = ''
+    router.push('/login')
+  }
 }
 
-// إغلاق القوائم عند النقر خارجها
+// Close dropdown when clicking outside
 const handleClickOutside = (event) => {
   if (!event.target.closest('.location-selector')) {
     showLocationDropdown.value = false
   }
 }
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
@@ -152,274 +199,37 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.navbar {
-  background: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  padding: 1rem 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.navbar-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2563eb;
-  text-decoration: none;
-  margin-right: 1rem;
-}
-
-.logo-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.location-selector {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #f8fafc;
-  min-width: 120px;
-}
-
-.location-selector:hover {
-  background: #f1f5f9;
-}
-
-.location-text {
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: #334155;
-}
-
-.icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  color: #64748b;
-}
-
-.chevron {
-  width: 1rem;
-  height: 1rem;
-  color: #64748b;
-  transition: transform 0.2s;
-}
-
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: white;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  z-index: 10;
-  margin-top: 0.5rem;
-  overflow: hidden;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.9rem;
-  color: #334155;
-  cursor: pointer;
-}
-
-.dropdown-item:hover {
-  background: #f8fafc;
-}
-
-.dropdown-icon {
-  width: 1rem;
-  height: 1rem;
-  color: #64748b;
-}
-
-.search-bar {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  max-width: 500px;
-  transition: all 0.2s;
-}
-
-.search-bar:focus-within {
-  background: #f1f5f9;
-  box-shadow: 0 0 0 2px #e0e7ff;
-}
-
-.search-icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  color: #64748b;
-  margin-right: 0.5rem;
-}
-
-.search-bar input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 0.9rem;
-  color: #334155;
-}
-
-.search-bar input::placeholder {
-  color: #94a3b8;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  margin-left: auto;
-}
-
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-icon {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
-.btn-login {
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: #334155;
-}
-
-.btn-login:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-}
-
-/* User Profile Styles */
-.user-profile {
-  margin-left: auto;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-name {
-  font-weight: 500;
-  font-size: 0.95rem;
-  color: #334155;
-}
-
+@import './homestyle.css';
 .logout-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.6rem 1.2rem;
   border: none;
-  background: transparent;
-  cursor: pointer;
-  color: #ef4444;
+  background: linear-gradient(90deg, #ff4d4d, #ff6b6b); /* Gradient red background */
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(255, 77, 77, 0.3); /* Subtle shadow */
 }
 
 .logout-btn:hover {
-  color: #dc2626;
+  background: linear-gradient(90deg, #ff3333, #ff5555); /* Darker gradient on hover */
+  transform: translateY(-2px); /* Slight lift effect */
+  box-shadow: 0 4px 8px rgba(255, 77, 77, 0.4); /* Enhanced shadow on hover */
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .navbar-content {
-    gap: 1rem;
-  }
-  
-  .search-bar {
-    max-width: 350px;
-  }
+.logout-btn:active {
+  transform: translateY(0); /* Reset on click */
+  box-shadow: 0 1px 2px rgba(255, 77, 77, 0.3); /* Reduced shadow on click */
 }
 
-@media (max-width: 768px) {
-  .container {
-    padding: 0 1rem;
-  }
-  
-  .navbar-content {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding: 0.5rem 0;
-  }
-  
-  .search-bar {
-    order: 3;
-    width: 100%;
-    max-width: 100%;
-    margin-top: 0.5rem;
-  }
-  
-  .location-selector {
-    min-width: 100px;
-  }
-  
-  .btn span {
-    display: none;
-  }
-  
-  .btn-icon {
-    margin: 0;
-  }
-  
-  .user-name {
-    display: none;
-  }
+.logout-btn .btn-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: white; /* Ensure icon matches text color */
 }
 </style>
-<!-- <style scoped>
-@import './homestyle.css';
-</style> -->
