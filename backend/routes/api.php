@@ -46,7 +46,10 @@ Route::post('/employers/login', [EmployerController::class, 'login']);
 Route::post('/auth/password/email', [AuthController::class, 'sendResetEmail']);
 Route::post('/auth/password/email', [AuthController::class, 'sendResetEmail']);
 Route::post('/auth/password/reset', [AuthController::class, 'reset']);
-
+// Admin routes
+    Route::get('/jobs/pending', [JobController::class, 'pendingJobs'])->name('jobs.pending')->middleware('auth:sanctum'); // List pending jobs
+    Route::post('/jobs/{id}/approve', [JobController::class, 'approveJob'])->name('jobs.approve'); // Approve a job
+    Route::post('/jobs/{id}/reject', [JobController::class, 'rejectJob'])->name('jobs.reject'); // Reject a job
 
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);
