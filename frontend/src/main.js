@@ -7,6 +7,7 @@ import router from "./router/index.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import { createPinia } from "pinia";
 
 const app = createApp(App);
 app.component("font-awesome-icon", FontAwesomeIcon);
