@@ -8,14 +8,17 @@ enum ApplicationStatus: string
     case REVIEWED = 'reviewed';
     case ACCEPTED = 'accepted';
     case REJECTED = 'rejected';
+    case HIRED = 'hired';
+    case SHORTLISTED = 'shortlisted';
 
     public function label(): string
     {
-        return match ($this) {
+        return match($this) {
             self::PENDING => 'Pending Review',
             self::REVIEWED => 'Reviewed',
             self::ACCEPTED => 'Accepted',
             self::REJECTED => 'Rejected',
+            self::SHORTLISTED => 'Shortlisted',
         };
     }
 }
