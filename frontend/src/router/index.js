@@ -8,6 +8,9 @@ import Login from "../components/auth/Login.vue";
 import page from "../components/auth/page.vue";
 import ForgetPassword from "../components/auth/ForgetPassword.vue";
 import ResetPassword from "../components/auth/ResetPassword.vue";
+import JobDetails from "../pages/Singel_Job-Apply_Job/JobDetails.vue";
+import ApplyJob from "../pages/Singel_Job-Apply_Job/ApplyJob.vue";
+import ThankYouPage from "../pages/Singel_Job-Apply_Job/ThankYouPage.vue";
 
 const routes = [
   {
@@ -44,8 +47,25 @@ const routes = [
     name: "ResetPassword",
     component: ResetPassword,
 
-  }
-
+  },
+  //Marwa Nasser
+  {
+    path: "/job-details/:id",
+    name: "JobDetails",
+    component: JobDetails,
+    props: true,
+  },
+  {
+    path: "/apply",
+    name: "ApplyJob",
+    component: ApplyJob,
+    props: (route) => ({
+      jobId: route.query.jobId,
+      jobTitle: route.query.jobTitle,
+    }),
+  },
+  { path: "/thank-you", name: "ThankYouPage", component: ThankYouPage },
+  //Marwa Nasser
 ];
 
 const router = createRouter({
