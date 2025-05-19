@@ -72,7 +72,7 @@ class ApplicationController extends Controller
             'application' => $application,
         ]);
     }
-    /**
+        /**
      * Display a listing of the resource.
      */
     public function index()
@@ -146,4 +146,6 @@ class ApplicationController extends Controller
 
         return response()->json(['message' => 'Application deleted successfully.'], 200);
     }
+
+
 }

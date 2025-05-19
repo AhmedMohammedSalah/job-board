@@ -15,6 +15,7 @@ use App\Http\Controllers\api\CandidateController;
 use App\Http\Controllers\api\SkillController;
 // use CandidateSkillController
 use App\Http\Controllers\api\CandidateSkillController;
+// use ApplicationController
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -32,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->get('/singleJob/{id}', [SingleJobController::class, 'show']);
 
+
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
@@ -47,6 +49,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::ApiResource('skills', SkillController::class);
     // [AMS] Candidate Skills ApiRoute
     Route::ApiResource('candidate-skills', CandidateSkillController::class);
+Route::post('/auth/password/reset', [AuthController::class, 'reset']);
+    // [AMS] Applications Route
+    Route::get('/recently-applied',[ApplicationController::class,'recentlyApplied']);
+    // [AMS] Candidate ApiResource Route
+    Route::ApiResource ('candidate',CandidateController::class);
+    Route::put('/auth/user', [AuthController::class, 'update']);
 });
 Route::post('/employers/register', [EmployerController::class, 'register']);
 Route::post('/employers/login', [EmployerController::class, 'login']);
@@ -72,4 +80,11 @@ Route::prefix('jobs')->group(function () {
 
 Route::prefix('applications')->middleware('auth:sanctum')->group(function () {
     Route::patch('/{applicationId}/status', [ApplicationController::class, 'updateApplicationStatus']);
+
+    // Route::get('/{jobId}/comments', [JobCommentController::class, 'index']);
+    // Route::post('/{jobId}/comments', [JobCommentController::class, 'store']);
+    // Route::put('/{jobId}/comments/{commentId}', [JobCommentController::class, 'update']);
+    // Route::delete('/{jobId}/comments/{commentId}', [JobCommentController::class, 'destroy']);
+    Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
+
 });
