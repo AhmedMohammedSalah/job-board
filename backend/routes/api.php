@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\JobCommentController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\EmployerJobController;
 
 // use ApplicationController
 use App\Http\Controllers\api\CandidateController;
@@ -69,6 +70,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/profile', [EmployerController::class, 'updateProfile']);
         Route::post('/logo', [EmployerController::class, 'uploadLogo']);
         Route::get('/dashboard', [EmployerController::class, 'dashboard']);
+    });
+    
+    // Employer Job Management Routes
+    Route::prefix('employer/jobs')->group(function () {
+        Route::post('/', [EmployerJobController::class, 'store']);
+        Route::put('/{jobId}', [EmployerJobController::class, 'update']);
+        Route::delete('/{jobId}', [EmployerJobController::class, 'destroy']);
+        Route::patch('/{jobId}/toggle-active', [EmployerJobController::class, 'toggleActive']);
+        Route::patch('/{jobId}/mark-expired', [EmployerJobController::class, 'markAsExpired']);
     });
     
     Route::prefix('applications')->group(function () {
