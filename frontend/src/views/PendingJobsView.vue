@@ -10,49 +10,52 @@
           </button>
         </div>
       </div>
-
+      
       <div class="content-card">
         <div v-if="loading" class="loading-spinner">
           <i class="fas fa-spinner fa-spin"></i> Loading...
         </div>
-
+        
         <div v-else-if="error" class="error-message">
           <i class="fas fa-exclamation-circle"></i> {{ error }}
         </div>
-
+        
         <div v-else-if="pendingJobs.length === 0" class="no-jobs">
           <i class="fas fa-check-circle"></i> No pending jobs at the moment.
         </div>
-
+        
         <div v-else class="jobs-list">
           <div v-for="job in pendingJobs" :key="job.id" class="job-card">
             <div class="job-header">
-              <h3>{{ job.title }}</h3> <div class="job-meta">
-                <span><i class="fas fa-id-card"></i> ID: {{ job.id }}</span> <span><i class="fas fa-briefcase"></i> Category: {{ job.category_id }}</span>
-                <span><i class="fas fa-building"></i> Employer: {{ job.employer_id }}</span> </div>
+              <h3>{{ job.title }}</h3>
+              <div class="job-meta">
+                <span><i class="fas fa-id-card"></i> ID: {{ job.id }}</span>
+                <span><i class="fas fa-briefcase"></i> Category: {{ job.category_id }}</span>
+                <span><i class="fas fa-building"></i> Employee: {{ job.employee_id }}</span>
+              </div>
             </div>
-
+            
             <div class="job-details">
               <div class="job-section">
                 <h4>Description:</h4>
                 <p>{{ job.description || 'Not specified' }}</p>
               </div>
-
+              
               <div class="job-section">
                 <h4>Responsibilities:</h4>
                 <p>{{ job.responsibilities || 'Not specified' }}</p>
               </div>
-
+              
               <div class="job-section">
                 <h4>Requirements:</h4>
                 <p>{{ job.requirements || 'Not specified' }}</p>
               </div>
-
+              
               <div class="job-section">
                 <h4>Benefits:</h4>
                 <p>{{ job.benefits || 'Not specified' }}</p>
               </div>
-
+              
               <div class="job-meta-grid">
                 <div class="meta-item">
                   <i class="fas fa-map-marker-alt"></i>
@@ -80,11 +83,13 @@
                 </div>
               </div>
             </div>
-
+            
             <div class="job-actions">
-              <button class="approve-btn" @click="approveJob(job.id)"> <i class="fas fa-check"></i> Approve
+              <button class="approve-btn" @click="approveJob(job.id)">
+                <i class="fas fa-check"></i> Approve
               </button>
-              <button class="reject-btn" @click="rejectJob(job.id)"> <i class="fas fa-times"></i> Reject
+              <button class="reject-btn" @click="rejectJob(job.id)">
+                <i class="fas fa-times"></i> Reject
               </button>
             </div>
           </div>
@@ -106,10 +111,7 @@ export default {
     return {
       pendingJobs: [],
       loading: false,
-      error: null,
-      // Define your API base URL here, ideally from .env.local or .env
-      // Make sure VUE_APP_API_URL is set in your .env file (e.g., VUE_APP_API_URL=http://127.0.0.1:8000/api)
-      apiBaseUrl: process.env.VUE_APP_API_URL || 'http://127.0.0.1:8000/api'
+      error: null
     }
   },
   created() {
@@ -121,24 +123,20 @@ export default {
       this.error = null
       try {
         const token = localStorage.getItem('token')
-        if (!token) {
-          throw new Error('Authentication token not found. Please log in.')
-        }
-
-        const response = await fetch(`${this.apiBaseUrl}/jobs/pending`, { // Using apiBaseUrl
+        const response = await fetch(`http://127.0.0.1:8000/api/jobs/pending`, {
           headers: {
-            'Authorization': `Bearer ${token}`, // Using the actual token from localStorage
+            'Authorization': `Bearer 3|D89deqvk1bC1CndPXGdENF5zc2qvgwivOIzGx9NY21fa8985`,
             'Content-Type': 'application/json'
           }
         })
-
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
-
+        
         const data = await response.json()
-        this.pendingJobs = data
+        this.pendingJobs = data.data
+        // console.log(data.data);
       } catch (err) {
         this.error = err.message || 'Failed to fetch pending jobs'
         console.error('Error fetching pending jobs:', err)
@@ -157,74 +155,49 @@ export default {
     },
     async approveJob(jobId) {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          throw new Error('Authentication token not found. Please log in.')
-        }
-
-        const response = await fetch(`${this.apiBaseUrl}/jobs/${jobId}/approve`, { // Using apiBaseUrl
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch(`http://127.0.0.1:8000/api/jobs/${jobId}/approve`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`, // Using the actual token from localStorage
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         })
-
+        // console.log(jobId);
         if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.message || 'Failed to approve job')
         }
-
-        // Assuming this.$toast is available via a plugin
-        if (this.$toast) {
-          this.$toast.success('Job approved successfully')
-        } else {
-          alert('Job approved successfully!'); // Fallback if toast not available
-        }
+        
+        this.$toast.success('Job approved successfully')
         this.fetchPendingJobs()
       } catch (err) {
-        if (this.$toast) {
-          this.$toast.error(err.message || 'Failed to approve job')
-        } else {
-          alert(`Error: ${err.message || 'Failed to approve job'}`); // Fallback
-        }
-        console.error('Error approving job:', err)
+        this.$toast.error('Failed to approve job')
+        console.error('Error approving job:')
       }
     },
     async rejectJob(jobId) {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          throw new Error('Authentication token not found. Please log in.')
-        }
-
-        const response = await fetch(`${this.apiBaseUrl}/jobs/${jobId}/reject`, { // Using apiBaseUrl
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch(`http://127.0.0.1:8000/api/jobs/${jobId}/reject`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`, // Using the actual token from localStorage
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         })
-
+        
         if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.message || 'Failed to reject job')
+          console.log(response);
+          throw new Error( errorData.message ||'Failed to reject job')
         }
-
-        // Assuming this.$toast is available via a plugin
-        if (this.$toast) {
-          this.$toast.success('Job rejected successfully')
-        } else {
-          alert('Job rejected successfully!'); // Fallback
-        }
+        
+        this.$toast.success('Job rejected successfully')
         this.fetchPendingJobs()
       } catch (err) {
-        if (this.$toast) {
-          this.$toast.error(err.message || 'Failed to reject job')
-        } else {
-          alert(`Error: ${err.message || 'Failed to reject job'}`); // Fallback
-        }
-        console.error('Error rejecting job:', err)
+        // this.$toast.error( 'Failed to reject job')
+        // console.error('Error rejecting job:')
       }
     }
   }
@@ -232,7 +205,6 @@ export default {
 </script>
 
 <style scoped>
-/* Your existing CSS styles remain the same */
 .app-layout {
   display: flex;
   min-height: 100vh;
@@ -461,11 +433,11 @@ export default {
     margin-left: 0;
     padding: 20px;
   }
-
+  
   .job-meta-grid {
     grid-template-columns: 1fr;
   }
-
+  
   .page-header {
     flex-direction: column;
     align-items: flex-start;

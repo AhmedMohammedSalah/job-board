@@ -173,12 +173,16 @@ class JobController extends Controller
 
     public function rejectJob(Request $request, $id)
     {
-        $this->authorize('admin', User::class);
+        // $this->authorize('admin', User::class);
         
-        return $this->update(new Request([
-            'status' => 'rejected',
-            'rejection_reason' => $request->rejection_reason
-        ]), $id);
+        // return $this->update(new Request([
+        //     'status' => 'rejected',
+        //     'rejection_reason' => $request->rejection_reason
+        // ]), $id);
+        $job = Job::find($id);
+        $job-> status = 'expired';
+        $job-> save();
+        return response()-> json(['message' => 'Job rejected successfully',$job]);
     }
 
     public function destroy($id)
