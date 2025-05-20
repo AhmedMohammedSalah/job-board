@@ -1,6 +1,6 @@
 <template>
-    <div class="container my-5">
-        <div class="card shadow-sm p-4">
+    <div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+        <div class="card shadow-sm p-4" style="max-width: 700px; width: 100%;">
             <h3 class="mb-4">Apply for: {{ jobTitle }}</h3>
             <form @submit.prevent="submitForm" novalidate>
                 <div class="mb-3 text-start">
@@ -96,26 +96,44 @@ export default {
         async submitForm() {
             this.submitError = '';
 
-            if (!this.validateForm()) {
-                return;
-            }
+            if (!this.validateForm()) return;
 
             this.submitting = true;
 
-            const formData = new FormData();
-            formData.append('job_id', this.jobId);
-            formData.append('cover_letter', this.form.coverLetter);
-            formData.append('resume_path', this.form.resume);
-
-            const candidateId = localStorage.getItem('candidate_id');
-            formData.append('candidate_id', candidateId);
-
-            formData.append('status', 'pending');
+            const candidateId = parseInt(localStorage.getItem('candidate_id'));
+            if (isNaN(candidateId) || candidateId <= 0) {
+                this.submitError = 'Invalid candidate profile. Please complete your profile first.';
+                this.submitting = false;
+                return;
+            }
 
             try {
                 const token = localStorage.getItem('auth_token');
 
-                const response = await axios.post('http://127.0.0.1:8000/api/applications', formData, {
+                const checkResponse = await axios.get(`http://127.0.0.1:8000/api/checkApplications`, {
+                    params: {
+                        job_id: this.jobId,
+                        candidate_id: candidateId
+                    },
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (checkResponse.data.exists) {
+                    this.submitError = 'You have already applied for this job. You cannot apply again.';
+                    this.submitting = false;
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('job_id', this.jobId);
+                formData.append('cover_letter', this.form.coverLetter);
+                formData.append('resume_path', this.form.resume);
+                formData.append('candidate_id', candidateId);
+                formData.append('status', 'pending');
+
+                await axios.post('http://127.0.0.1:8000/api/applications', formData, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json',
@@ -143,14 +161,13 @@ export default {
                 this.submitting = false;
             }
         }
-
     }
 }
 </script>
 
 <style scoped>
-.container {
-    max-width: 700px;
+.min-vh-100 {
+    min-height: 100vh;
 }
 
 .card {

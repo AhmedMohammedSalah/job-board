@@ -162,4 +162,13 @@ class ApplicationController extends Controller
         return response()->json($jobs);
     }
 
+    //Marwa Nasser
+    public function checkIfExists(Request $request)
+    {
+        $exists = Application::where('job_id', $request->job_id)
+            ->where('candidate_id', $request->candidate_id)
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
 }

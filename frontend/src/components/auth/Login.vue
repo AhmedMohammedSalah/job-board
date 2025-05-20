@@ -293,7 +293,8 @@ const handleLogin = async () => {
     // Handle successful login
     if (response.data.success) {
       // Store token and user data
-      localStorage.setItem('auth_token', response.data.token)
+      localStorage.setItem('auth_token', response.data.token);
+      localStorage.setItem('candidate_id', response.data.user.id);
       if (rememberMe.value) {
         localStorage.setItem('user', JSON.stringify(response.data.user))
       }

@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/applications/{id}', [ApplicationController::class, 'update']);
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
     Route::get('/recently-applied', [ApplicationController::class, 'recentlyApplied']);
+    Route::get('/checkApplications', [ApplicationController::class, 'checkIfExists']);
 });
 
 Route::middleware('auth:sanctum')->get('/singleJob/{id}', [SingleJobController::class, 'show']);
