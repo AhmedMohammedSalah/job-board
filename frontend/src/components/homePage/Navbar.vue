@@ -1,64 +1,45 @@
 <template>
   <header class="navbar">
-    <div class="container">
-      <div class="navbar-content">
-        <!-- Logo -->
-        <router-link to="/" class="logo">
-          <BriefcaseIcon class="logo-icon" />
-          <span>Jobpilot</span>
-        </router-link>
+    <div class="navbar-container ">
+      <!-- Logo Section -->
+      <router-link to="/" class="logo-section">
+        <BriefcaseIcon class="logo-icon" />
+        <span class="logo-text">JobPilot</span>
+        <div class="logo-badge">Pro</div>
+      </router-link>
 
-        <!-- Location Dropdown -->
-        <div class="location-selector" @click="toggleLocationDropdown">
-          <MapPinIcon class="icon" />
-          <span class="location-text">{{ selectedLocation }}</span>
-          <ChevronDownIcon class="chevron" :class="{ 'rotate-180': showLocationDropdown }" />
+
+      <!-- User Actions -->
+      <div class="user-actions">
+        <button v-if="!isLoggedIn" class="auth-btn login-btn" @click="navigateToLogin">
+          <ArrowRightOnRectangleIcon class="btn-icon" />
+          <span>Sign In</span>
+        </button>
+        
+        <button v-if="!isLoggedIn" class="auth-btn primary-btn" @click="navigateToPostJob">
+          <PlusCircleIcon class="btn-icon" />
+          <span>Post Job</span>
+          <RocketLaunchIcon class="btn-decorator" />
+        </button>
+
+        <div v-if="isLoggedIn" class="user-profile">
+          <button class="icon-btn notification-btn">
+            <BellAlertIcon class="icon" />
+            <span class="notification-badge">3</span>
+          </button>
           
-          <div v-if="showLocationDropdown" class="dropdown-menu">
-            <div 
-              v-for="location in locations" 
-              :key="location"
-              class="dropdown-item"
-              @click.stop="selectLocation(location)"
-            >
-              <MapPinIcon class="dropdown-icon" />
-              {{ location }}
-            </div>
+          <div class="user-avatar">
+            <UserCircleIcon class="avatar-icon" />
           </div>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="search-bar">
-          <MagnifyingGlassIcon class="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Job title, keyword, company" 
-            v-model="searchQuery"
-            @keyup.enter="performSearch"
-          />
-        </div>
-
-        <!-- Before Login -->
-        <div class="action-buttons" v-if="!isLoggedIn">
-          <button class="btn btn-login" @click="navigateToLogin">
-            <ArrowRightOnRectangleIcon class="btn-icon" />
-            <span>Sign In</span>
-          </button>
-          <button class="btn btn-primary" @click="navigateToPostJob">
-            <PlusCircleIcon class="btn-icon" />
-            <span>Post A Job</span>
-          </button>
-        </div>
-
-     
-        <div class="user-profile" v-else>
+          
           <div class="user-info">
-            <span class="user-name">Welcome, {{ userName }}</span>
-            <button class="logout-btn" @click="logout">
-              <ArrowLeftOnRectangleIcon class="btn-icon" />
-              <span>Logout</span>
-            </button>
+            <span class="user-greeting">Welcome back</span>
+            <span class="user-name">{{ userName }}</span>
           </div>
+          
+          <button class="logout-btn" @click="logout">
+            <ArrowLeftOnRectangleIcon class="btn-icon" />
+          </button>
         </div>
       </div>
     </div>
@@ -66,23 +47,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { 
   BriefcaseIcon,
-  MapPinIcon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
   ArrowRightOnRectangleIcon,
   PlusCircleIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
+  Squares2X2Icon,
+  BuildingOffice2Icon,
+  UserGroupIcon,
+  BellIcon,
+  BellAlertIcon,
+  UserCircleIcon,
+  RocketLaunchIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
-const showLocationDropdown = ref(false)
-const selectedLocation = ref('India')
-const searchQuery = ref('')
 const isLoggedIn = ref(false)
 const userName = ref('')
 const token = ref(localStorage.getItem('auth_token') || '')
@@ -96,16 +78,13 @@ const fetchCurrentUser = async () => {
       })
       isLoggedIn.value = true
       userName.value = response.data.name || 'User'
-      console.log('Current user:', response.data)
     } catch (error) {
-      console.error('Error fetching user:', error.response ? error.response.data : error.message)
+      console.error('Error fetching user:', error)
       isLoggedIn.value = false
       userName.value = ''
-      // localStorage.removeItem('auth_token')
       token.value = ''
     }
   } else {
-    // Fallback to localStorage user data if token is missing
     const userData = JSON.parse(localStorage.getItem('user'))
     if (userData) {
       isLoggedIn.value = true
@@ -117,66 +96,27 @@ const fetchCurrentUser = async () => {
 onMounted(() => {
   token.value = localStorage.getItem('auth_token') || ''
   fetchCurrentUser()
-  document.addEventListener('click', handleClickOutside)
 })
 
-const locations = [
-  'India',
-  'United States',
-  'United Kingdom',
-  'Canada',
-  'Australia',
-  'Germany',
-  'Singapore'
-]
-
-const toggleLocationDropdown = () => {
-  showLocationDropdown.value = !showLocationDropdown.value
-}
-
-const selectLocation = (location) => {
-  selectedLocation.value = location
-  showLocationDropdown.value = false
-}
-
-const performSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({ path: '/jobs', query: { q: searchQuery.value } })
-  }
-}
-
-const navigateToLogin = () => {
-  router.push('/login')
-}
-
-const navigateToPostJob = () => {
-  router.push('/post-job')
-}
+const navigateToLogin = () => router.push('/login')
+const navigateToPostJob = () => router.push('/post-job')
 
 const logout = async () => {
   try {
-    // Fetch CSRF cookie for Sanctum (required for POST requests)
     await axios.get('http://localhost:8000/sanctum/csrf-cookie')
-
-    // Call logout endpoint with token
     if (token.value) {
       await axios.post('http://localhost:8000/api/logout', {}, {
         headers: { Authorization: `Bearer ${token.value}` }
       })
     }
-
-    // Clear localStorage and reset state
     localStorage.removeItem('auth_token')
     localStorage.removeItem('user')
     isLoggedIn.value = false
     userName.value = ''
     token.value = ''
-    
-    // Redirect to login page
     router.push('/login')
   } catch (error) {
-    console.error('Logout error:', error.response ? error.response.data : error.message)
-    // Clear state and redirect even if API call fails
+    console.error('Logout error:', error)
     localStorage.removeItem('auth_token')
     localStorage.removeItem('user')
     isLoggedIn.value = false
@@ -185,51 +125,269 @@ const logout = async () => {
     router.push('/login')
   }
 }
-
-// Close dropdown when clicking outside
-const handleClickOutside = (event) => {
-  if (!event.target.closest('.location-selector')) {
-    showLocationDropdown.value = false
-  }
-}
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
 </script>
 
 <style scoped>
-@import './homestyle.css';
-.logout-btn {
+.navbar {
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+}
+
+/* Logo Section */
+.logo-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-decoration: none;
+  position: relative;
+
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-badge {
+  position: absolute;
+  top: -8px;
+  right: -20px;
+  background: #10b981;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+/* Navigation Links */
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  margin-left: 3rem;
+}
+
+.nav-link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  background: linear-gradient(90deg, #ff4d4d, #ff6b6b); /* Gradient red background */
-  color: white;
-  border-radius: 6px;
+  text-decoration: none;
+  color: #64748b;
   font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #3b82f6;
+}
+
+.nav-link.router-link-active {
+  color: #3b82f6;
+}
+
+.nav-link.router-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* User Actions */
+.user-actions {
+  margin: 0 30rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.auth-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: 8px;
+  font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(255, 77, 77, 0.3); /* Subtle shadow */
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn {
+  background: white;
+  color: #3b82f6;
+  border: 1px solid #e2e8f0;
+}
+
+.login-btn:hover {
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  padding-right: 2.5rem;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+}
+
+.btn-decorator {
+  position: absolute;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  color: white;
+  opacity: 0.8;
+}
+
+/* User Profile */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: #f1f5f9;
+}
+
+.notification-btn {
+  color: #64748b;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  width: 24px;
+  height: 24px;
+  color: #3b82f6;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-greeting {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.logout-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .logout-btn:hover {
-  background: linear-gradient(90deg, #ff3333, #ff5555); /* Darker gradient on hover */
-  transform: translateY(-2px); /* Slight lift effect */
-  box-shadow: 0 4px 8px rgba(255, 77, 77, 0.4); /* Enhanced shadow on hover */
+  background: #f1f5f9;
+  color: #ef4444;
 }
 
-.logout-btn:active {
-  transform: translateY(0); /* Reset on click */
-  box-shadow: 0 1px 2px rgba(255, 77, 77, 0.3); /* Reduced shadow on click */
+.btn-icon {
+  width: 18px;
+  height: 18px;
 }
 
-.logout-btn .btn-icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  color: white; /* Ensure icon matches text color */
+.icon {
+  width: 20px;
+  height: 20px;
 }
 </style>

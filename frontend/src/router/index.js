@@ -53,7 +53,34 @@ const routes = [
         path: "/candidateHomePage",
         name: "candidateHomePage",
         component: candidateHomePage,
-      }
+      },
+        {
+    path: "/pending-jobs",
+    name: "PendingJobs",
+    component: PendingJobsView,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+
+  {
+    path: "/job-details/:id",
+    name: "JobDetails",
+    component: JobDetails,
+    props: true,
+  },
+  {
+    path: "/apply",
+    name: "ApplyJob",
+    component: ApplyJob,
+    props: (route) => ({
+      jobId: route.query.jobId,
+      jobTitle: route.query.jobTitle,
+    }),
+  },
+  {
+    path: "/thank-you",
+    name: "ThankYouPage",
+    component: ThankYouPage,
+  },
     ],
   },
   {
@@ -87,33 +114,7 @@ const routes = [
     name: "inventory",
     component: inventory,
   },
-  {
-    path: "/pending-jobs",
-    name: "PendingJobs",
-    component: PendingJobsView,
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
 
-  {
-    path: "/job-details/:id",
-    name: "JobDetails",
-    component: JobDetails,
-    props: true,
-  },
-  {
-    path: "/apply",
-    name: "ApplyJob",
-    component: ApplyJob,
-    props: (route) => ({
-      jobId: route.query.jobId,
-      jobTitle: route.query.jobTitle,
-    }),
-  },
-  {
-    path: "/thank-you",
-    name: "ThankYouPage",
-    component: ThankYouPage,
-  },
 ];
 
 const router = createRouter({

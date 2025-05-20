@@ -1,7 +1,6 @@
 <template>
     <div class="job-details-page">
-        <AppHeader class="header" />
-        <Navbar class="navbar" />
+
 
         <div class="breadcrumb-wrapper w-100 py-3 bg-light">
             <div class="container">

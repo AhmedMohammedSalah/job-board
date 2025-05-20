@@ -9,7 +9,7 @@ import AppFooter from "../components/homePage/AppFooter.vue";
 </script>
 
 <template>
-  <AppHeader />
+  <!-- <AppHeader /> -->
   <Navbar />
   <div class="candidate-layout">
     <CandidateSidebar />

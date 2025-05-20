@@ -19,6 +19,7 @@ const router = useRouter();
 const activeItem = ref("/candidate"); // Default active item
 
 const menuItems = [
+  
   { icon: faThLarge, title: "Overview", route: "/candidate" },
   { 
     icon: faBriefcase, 
