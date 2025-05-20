@@ -31,7 +31,7 @@
         </router-link>
         
         <router-link 
-          to="/candidates" 
+          to="/candidate" 
           class="nav-link"
           active-class="nav-link-active"
         >

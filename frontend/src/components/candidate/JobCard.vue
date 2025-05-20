@@ -1,273 +1,296 @@
+<!-- components/candidate/JobCard.vue -->
 <template>
-  <div class="job-card">
-    <!-- Company Header -->
+  <div class="job-card" v-if="!loading && !error">
     <div class="job-header">
-      <div class="company-logo">
-        <img :src="logoUrl" :alt="job.company + ' logo'">
-      </div>
-      <div class="job-info">
-        <h3>{{ job.title }}</h3>
-        <p class="company">{{ job.company }}</p>
+      <div class="company-info">
+        <div class="logo-placeholder">
+          <!-- Add company logo here if available -->
+          <font-awesome-icon :icon="['fas', 'building']" class="company-icon" />
+        </div>
         <div class="job-meta">
-          <span class="job-type">{{ job.jobType }}</span>
-          <span class="work-model">{{ job.workModel }}</span>
+          <h3 class="job-title">{{ job.title }}</h3>
+          <div class="company-location">
+            <span class="company-name">{{ job.category.name }}</span>
+            <span class="separator">•</span>
+            <font-awesome-icon :icon="['fas', 'map-marker-alt']" />
+            <span class="location">{{ job.location }}</span>
+          </div>
         </div>
       </div>
+      <div class="work-type" :class="workTypeClass">
+        {{ workTypeLabel }}
+      </div>
     </div>
 
-    <!-- Job Details -->
     <div class="job-details">
       <div class="detail-item">
-        <i class="icon fas fa-map-marker-alt"></i>
-        <span>{{ job.location }}</span>
+        <font-awesome-icon :icon="['fas', 'money-bill-wave']" />
+        <span class="salary">{{ formattedSalary }}</span>
       </div>
+
       <div class="detail-item">
-        <i class="icon fas fa-money-bill-wave"></i>
-        <span>{{ formattedSalary }}</span>
-      </div>
-      <div class="detail-item">
-        <i class="icon fas fa-clock"></i>
-        <span>{{ formattedDate }}</span>
+        <font-awesome-icon :icon="['fas', 'clock']" />
+        <span class="deadline">{{ timeLeft }}</span>
       </div>
     </div>
 
-    <!-- Footer with Status and Actions -->
     <div class="job-footer">
-      <span class="status-badge" :class="job.status.toLowerCase()">
-        {{ formattedStatus }}
-      </span>
-      <div class="job-actions">
-        <button class="btn-view" @click="$emit('view', job.id)">
-          <i class="fas fa-eye"></i> View
-        </button>
-        <button 
-          class="btn-save" 
-          @click="$emit('save', job.id)"
-          :aria-label="isSaved ? 'Unsave job' : 'Save job'"
+      <div class="tags">
+        <span
+          class="tag"
+          v-for="(skill, index) in job.category.name.split(' ')"
+          :key="index"
         >
-          <i :class="['fas', isSaved ? 'fa-heart' : 'fa-heart-o']"></i>
-        </button>
+          {{ skill }}
+        </span>
       </div>
+      <button class="apply-button" @click="$emit('view-job', job.id)">
+        View Details
+      </button>
     </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="job-card loading" v-if="loading">
+    <div class="skeleton-header"></div>
+    <div class="skeleton-body"></div>
+    <div class="skeleton-footer"></div>
+  </div>
+
+  <!-- Error State -->
+  <div class="job-card error" v-if="error">
+    <font-awesome-icon :icon="['fas', 'exclamation-triangle']" />
+    <p>Failed to load job details</p>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, onMounted } from "vue";
+import { formatDistanceToNow } from 'date-fns';
+import api from "../../services/api.js";
 
 const props = defineProps({
   job: {
     type: Object,
     required: true,
-    validator: (job) => {
-      return [
-        'id',
-        'title',
-        'company',
-        'jobType',
-        'workModel',
-        'location',
-        'salaryRange',
-        'status',
-        'createdAt'
-      ].every(key => key in job);
-    }
   },
-  isSaved: {
+  loading: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
+const emit = defineEmits(["view-job"]);
 
-const emit = defineEmits(['view', 'save']);
+const loading = ref(true);
+const error = ref(false);
 
-// Static logo mapping - replace with your actual images
-const logoMap = {
-  'TechCorp': new URL('@/assets/logos/techcorp.png', import.meta.url).href,
-  'DesignHub': new URL('@/assets/logos/designhub.png', import.meta.url).href,
-  'FinanceCo': new URL('@/assets/logos/financeco.png', import.meta.url).href,
+const workTypeMap = {
+  remote: { label: "Remote", icon: ["fas", "house"], class: "remote" },
+  onsite: { label: "On-site", icon: ["fas", "briefcase"], class: "onsite" },
+  hybrid: { label: "Hybrid", icon: ["fas", "balance-scale"], class: "hybrid" },
 };
-
-const logoUrl = computed(() => logoMap[props.job.company] || new URL('@/assets/logos/default.png', import.meta.url).href);
-
+onMounted(() => {
+  // Simulate loading state
+  setTimeout(() => {
+    loading.value = false;
+  }, 1000 );
+  console.log("JobCard mounted with job:", props.job);
+});
+// Computed properties
+const workTypeLabel = computed(
+  () => workTypeMap[props.job.work_type]?.label || ""
+);
+const workTypeClass = computed(
+  () => workTypeMap[props.job.work_type]?.class || ""
+);
 const formattedSalary = computed(() => {
-  if (!props.job.salaryRange) return 'Negotiable';
-  return props.job.salaryRange.startsWith('EGP') 
-    ? props.job.salaryRange.replace('EGP', '£') 
-    : props.job.salaryRange;
+  if (!props.job.min_salary || !props.job.max_salary)
+    return "Salary not specified";
+
+  const min = parseFloat(props.job.min_salary).toLocaleString();
+  const max = parseFloat(props.job.max_salary).toLocaleString();
+  return `EGP ${min} - ${max}/mo`;
 });
 
-const formattedDate = computed(() => {
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return new Date(props.job.createdAt).toLocaleDateString('en-US', options);
-});
-
-const formattedStatus = computed(() => {
-  const statusMap = {
-    active: 'Active',
-    pending: 'Pending',
-    closed: 'Closed',
-    featured: 'Featured'
-  };
-  return statusMap[props.job.status.toLowerCase()] || props.job.status;
+const timeLeft = computed(() => {
+  if (!props.job.deadline) return "No deadline specified";
+  return formatDistanceToNow(new Date(props.job.deadline), { addSuffix: true });
 });
 </script>
 
 <style scoped>
 .job-card {
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  margin-bottom: 16px;
 }
 
 .job-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .job-header {
   display: flex;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
 }
 
-.company-logo {
-  width: 60px;
-  height: 60px;
+.company-info {
+  display: flex;
+  gap: 12px;
+}
+
+.logo-placeholder {
+  width: 48px;
+  height: 48px;
+  background: #f5f5f5;
   border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.company-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.job-info h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1.1rem;
-  color: #1a1a1a;
-}
-
-.company {
-  margin: 0 0 0.75rem;
-  color: #6b6b6b;
-  font-size: 0.9rem;
+.company-icon {
+  font-size: 24px;
+  color: #666;
 }
 
 .job-meta {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
 }
 
-.job-meta span {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  background: #f5f5f5;
-  color: #555;
+.job-title {
+  margin: 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.company-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.work-type {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.work-type.remote {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.work-type.onsite {
+  background: #f0f4c3;
+  color: #827717;
+}
+
+.work-type.hybrid {
+  background: #f8bbd0;
+  color: #880e4f;
 }
 
 .job-details {
-  padding: 1.5rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+  padding: 12px 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
 }
 
 .detail-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #555;
+  gap: 8px;
+  color: #444;
 }
 
-.detail-item .icon {
-  color: #1967D2;
-  width: 16px;
-  text-align: center;
+.salary {
+  font-weight: 500;
+  color: #2e7d32;
+}
+
+.deadline {
+  color: #d32f2f;
 }
 
 .job-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 16px;
 }
 
-.status-badge {
-  padding: 0.35rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.status-badge.active {
-  background: rgba(25, 103, 210, 0.1);
-  color: #1967D2;
-}
-
-.status-badge.pending {
-  background: rgba(255, 152, 0, 0.1);
-  color: #FF9800;
-}
-
-.status-badge.closed {
-  background: rgba(234, 67, 53, 0.1);
-  color: #EA4335;
-}
-
-.status-badge.featured {
-  background: rgba(52, 168, 83, 0.1);
-  color: #34A853;
-}
-
-.job-actions {
+.tags {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.btn-view {
-  padding: 0.5rem 1rem;
-  background: #1967D2;
+.tag {
+  background: #f5f5f5;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #666;
+}
+
+.apply-button {
+  background: #1976d2;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  padding: 8px 24px;
+  border-radius: 20px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   transition: background 0.2s ease;
 }
 
-.btn-view:hover {
-  background: #0d5bb7;
+.apply-button:hover {
+  background: #1565c0;
 }
 
-.btn-save {
-  width: 36px;
-  height: 36px;
+/* Loading States */
+.loading .skeleton-header,
+.loading .skeleton-body,
+.loading .skeleton-footer {
+  background: #f5f5f5;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.error {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  color: #EA4335;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-save:hover {
-  background: #f8f8f8;
-  border-color: #d0d0d0;
+  gap: 12px;
+  padding: 20px;
+  color: #d32f2f;
+  text-align: center;
 }
 </style>

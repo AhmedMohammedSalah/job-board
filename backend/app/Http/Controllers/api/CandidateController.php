@@ -63,8 +63,15 @@ class CandidateController extends Controller
         'headline' => 'sometimes|string|max:255',
         'skills' => 'sometimes|string',
         'experience_years' => 'sometimes|integer|min:0',
-        'linkedin_url' => 'sometimes|nullable|url'
+        'linkedin_url' => 'sometimes|nullable|url',
+        'resume_path' => 'sometimes|nullable|file|mimes:pdf,doc,docx|max:2048'
     ]);
+
+    // Handle file upload for resume
+    if ($request->hasFile('resume_path')) {
+        $resumePath = $request->file('resume_path')->store('resumes', 'public');
+        $validatedCandidateData['resume_path'] = $resumePath;
+    }
 
     // Validate user-specific fields if provided
     if ($request->has('user')) {

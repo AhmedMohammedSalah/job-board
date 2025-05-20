@@ -152,8 +152,11 @@ class ApplicationController extends Controller
         $id = Auth()->id();
         $applications = Application::where('candidate_id', $id)->orderBy('created_at', 'desc')->get();
         $jobs = [];
+
         foreach ($applications as $application) {
-            $jobs[] = $application->job;
+            $jobs[] = Job::where('id', $application->job_id)
+                ->with('category')
+                ->first();
         }
         // return $applications ;
         return response()->json($jobs);
