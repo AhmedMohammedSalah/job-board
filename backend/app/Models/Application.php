@@ -1,8 +1,8 @@
 <?php
 
 namespace App\Models;
-// use App\Models\Candidate;
-// use App\Models\Job;
+use App\Models\Candidate;
+use App\Models\Job;
 
 use App\Enums\ApplicationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
