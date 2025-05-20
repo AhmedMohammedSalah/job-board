@@ -131,9 +131,9 @@ const handleLogin = async () => {
       // Store token and user data
       localStorage.setItem('auth_token', response.data.token);
       // localStorage.setItem('candidate_id', response.data.user.id);
-      if (rememberMe.value) {
+      // if (rememberMe.value) {
         localStorage.setItem('user', JSON.stringify(response.data.user))
-      }
+      // }
 
       showAlert('success', 'Login successful! Redirecting...')
       setTimeout(() => {

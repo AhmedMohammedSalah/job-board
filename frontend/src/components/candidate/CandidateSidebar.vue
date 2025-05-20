@@ -8,7 +8,9 @@ import {
   faHeart,
   faBell,
   faSignOutAlt,
-  faUser
+  faUser,
+  // overview 
+  faUserCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -19,8 +21,11 @@ const router = useRouter();
 const activeItem = ref("/candidate"); // Default active item
 
 const menuItems = [
-  
-  { icon: faThLarge, title: "Overview", route: "/candidate" },
+  // home 
+  { icon: faThLarge, title: "Home", route: "/candidateHomePage" },
+  // overview
+
+  { icon: faUserCircle, title: "Overview", route: "/candidate" },
   { 
     icon: faBriefcase, 
     title: "Recently Applied Jobs", 

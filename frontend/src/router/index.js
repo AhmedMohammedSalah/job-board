@@ -18,6 +18,7 @@ import CandidateLayout from "../layouts/CandidateLayout.vue";
 import CandidateOverview from "../views/candidate/CandidateOverview.vue";
 import candidateSettings from "../views/candidate/CandidateSettings.vue";
 import RecentlyApplied from "../components/candidate/RecentlyApplied.vue";
+import NotFound from "../pages/Common/NotFound.vue";
 
 const routes = [
   {
@@ -54,39 +55,39 @@ const routes = [
         name: "candidateHomePage",
         component: candidateHomePage,
       },
-        {
-    path: "/pending-jobs",
-    name: "PendingJobs",
-    component: PendingJobsView,
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
 
-  {
-    path: "/job-details/:id",
-    name: "JobDetails",
-    component: JobDetails,
-    props: true,
-  },
-  {
-    path: "/apply",
-    name: "ApplyJob",
-    component: ApplyJob,
-    props: (route) => ({
-      jobId: route.query.jobId,
-      jobTitle: route.query.jobTitle,
-    }),
-  },
-  {
-    path: "/thank-you",
-    name: "ThankYouPage",
-    component: ThankYouPage,
-  },
+      {
+        path: "/job-details/:id",
+        name: "JobDetails",
+        component: JobDetails,
+        props: true,
+      },
+      {
+        path: "/apply",
+        name: "ApplyJob",
+        component: ApplyJob,
+        props: (route) => ({
+          jobId: route.query.jobId,
+          jobTitle: route.query.jobTitle,
+        }),
+      },
+      {
+        path: "/thank-you",
+        name: "ThankYouPage",
+        component: ThankYouPage,
+      },
     ],
   },
   {
     path: "/register",
     name: "Register",
     component: Register,
+  },
+  {
+    path: "/pending-jobs",
+    name: "PendingJobs",
+    component: PendingJobsView,
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: "/login",
@@ -108,13 +109,18 @@ const routes = [
     name: "ResetPassword",
     component: ResetPassword,
   },
-  // admin route 
+  // admin route
   {
     path: "/inventory",
     name: "inventory",
     component: inventory,
   },
-
+  // 404 page
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: NotFound,
+  },
 ];
 
 const router = createRouter({
