@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { createPinia } from 'pinia'
 
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
-import { createPinia } from "pinia";
 
 const app = createApp(App);
 app.component("font-awesome-icon", FontAwesomeIcon);

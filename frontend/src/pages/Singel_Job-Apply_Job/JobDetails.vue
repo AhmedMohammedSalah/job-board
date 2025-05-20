@@ -1,35 +1,36 @@
-import axios from 'axios';
 <template>
     <div class="container bg-white">
         <div v-if="loading || error" class="d-flex justify-content-center align-items-center vh-100">
-  <div v-if="loading" class="text-center">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-    <p class="mt-3 fw-semibold text-secondary fs-5">Loading job details...</p>
-  </div>
+            <div v-if="loading" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 fw-semibold text-secondary fs-5">Loading job details...</p>
+            </div>
 
-  <div v-else-if="error" class="alert alert-danger d-flex align-items-center gap-3 shadow rounded-4 p-4" role="alert" style="max-width: 500px;">
-    <i class="bi bi-exclamation-triangle-fill fs-3"></i>
-    <div class="flex-grow-1 fs-6">
-      {{ error }}
-    </div>
-  </div>
-</div>
+            <div v-else-if="error" class="alert alert-danger d-flex align-items-center gap-3 shadow rounded-4 p-4"
+                role="alert" style="max-width: 500px;">
+                <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                <div class="flex-grow-1 fs-6">
+                    {{ error }}
+                </div>
+            </div>
+        </div>
 
         <div v-else class="p-4">
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <!-- Logo + Info -->
                 <div class="d-flex align-items-center">
-                    <img :src="job.companyImage" alt="Company Logo" class="rounded-circle me-3" width="60"
-                        height="60" />
+                    <div class="company-logo-placeholder rounded-circle me-3 d-flex align-items-center justify-content-center"
+                        style="width: 60px; height: 60px; background-color: #f0f0f0;">
+                        <i class="bi bi-building text-muted fs-4"></i>
+                    </div>
                     <div>
                         <h5 class="mb-1 fw-bold">{{ job.title }}</h5>
                         <p class="mb-1 text-muted d-flex align-items-center">
-                            at {{ company }}
-                            <span class="badge bg-success ms-2">{{ job.type }}</span>
-                            <span class="badge bg-light text-danger border ms-2">Featured</span>
+                            <span class="badge bg-success me-2">{{ job.work_type }}</span>
+                            <span class="badge bg-light text-danger border">Featured</span>
                         </p>
                     </div>
                 </div>
@@ -61,29 +62,18 @@ import axios from 'axios';
                         <div class="requirements-section mb-4">
                             <h4 class="section-title mb-3">Requirements</h4>
                             <ul class="requirements-list">
-                                <li v-for="(req, index) in job.requirements" :key="'req' + index"
-                                    class="requirement-item">
-                                    {{ req }}
-                                </li>
-                            </ul>
-                        </div>
-
-                        <!-- Desirable Section -->
-                        <div class="desirable-section mb-4" v-if="job.desirable && job.desirable.length">
-                            <h4 class="section-title mb-3">Desirable:</h4>
-                            <ul class="desirable-list">
-                                <li v-for="(item, index) in job.desirable" :key="'des' + index" class="desirable-item">
-                                    {{ item }}
+                                <li class="requirement-item">
+                                    {{ job.requirements }}
                                 </li>
                             </ul>
                         </div>
 
                         <!-- Benefits Section -->
-                        <div class="benefits-section mb-4" v-if="job.benefits && job.benefits.length">
+                        <div class="benefits-section mb-4">
                             <h4 class="section-title mb-3">Benefits</h4>
                             <ul class="benefits-list">
-                                <li v-for="(benefit, index) in job.benefits" :key="'ben' + index" class="benefit-item">
-                                    {{ benefit }}
+                                <li class="benefit-item">
+                                    {{ job.benefits }}
                                 </li>
                             </ul>
                         </div>
@@ -96,8 +86,10 @@ import axios from 'axios';
                         <!-- Salary & Location -->
                         <div class="row mb-4 border p-3 rounded">
                             <div class="col-md-6">
-                                <h6 class="section-title text-muted mb-2">Salary (USD)</h6>
-                                <p class="salary-amount fw-bold text-success">{{ job.salary }}</p>
+                                <h6 class="section-title text-muted mb-2">Salary (EGP)</h6>
+                                <p class="salary-amount fw-bold text-success">
+                                    {{ job.min_salary }} - {{ job.max_salary }}
+                                </p>
                             </div>
                             <div class="col-md-6">
                                 <h6 class="section-title text-muted mb-2">Job Location</h6>
@@ -108,61 +100,26 @@ import axios from 'axios';
                         <!-- Remote Job -->
                         <div class="position-absolute top-0 end-0 translate-middle-y" style="right: -20px;">
                             <span class="badge bg-primary text-light">
-                                <i class="bi bi-globe me-1"></i> {{ job.remote }}
+                                <i class="bi bi-globe me-1"></i> {{ job.work_type === 'remote' ? 'Remote' : 'On-site' }}
                             </span>
-                        </div>
-
-                        <!-- Job Benefits -->
-                        <div class="benefits-section mb-4 border p-3 rounded">
-                            <h6 class="section-title text-muted mb-2 text-start">Job Benefits</h6>
-                            <div v-if="job.jobBenefits" class="d-flex flex-wrap gap-2">
-                                <span class="badge bg-light text-success border"
-                                    v-for="(benefit, index) in job.jobBenefits" :key="index">
-                                    {{ benefit }}
-                                </span>
-                            </div>
                         </div>
 
                         <!-- Job Overview -->
                         <div class="border p-3 rounded">
                             <h6 class="section-title text-muted mb-3 text-start">Job Overview</h6>
                             <div class="row text-center">
-                                <div class="col-md-4 mb-3">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="bi bi-calendar-check text-primary mb-1 fs-4"></i>
-                                        <p class="small text-muted mb-1">JOB POSTED:</p>
-                                        <p class="fw-bold">{{ job.posted }}</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="bi bi-calendar-x text-primary mb-1 fs-4"></i>
-                                        <p class="small text-muted mb-1">JOB EXPIRE IN</p>
-                                        <p class="fw-bold">{{ job.expires }}</p>
+                                        <p class="small text-muted mb-1">APPLICATION DEADLINE</p>
+                                        <p class="fw-bold">{{ formatDate(job.deadline) }}</p>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="bi bi-bar-chart-line text-primary mb-1 fs-4"></i>
-                                        <p class="small text-muted mb-1">JOB LEVEL:</p>
-                                        <p class="fw-bold">{{ job.level }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row text-center">
-                                <div class="col-md-4 mb-3">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="bi bi-briefcase text-primary mb-1 fs-4"></i>
-                                        <p class="small text-muted mb-1">EXPERIENCE:</p>
-                                        <p class="fw-bold">{{ job.experience }}</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="bi bi-mortarboard text-primary mb-1 fs-4"></i>
-                                        <p class="small text-muted mb-1">EDUCATION</p>
-                                        <p class="fw-bold">{{ job.education }}</p>
+                                        <p class="small text-muted mb-1">STATUS</p>
+                                        <p class="fw-bold text-capitalize">{{ job.status }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -190,35 +147,9 @@ import axios from 'axios';
                             <div class="tags-section">
                                 <h6 class="section-title text-muted mb-2 text-start">Job tags:</h6>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <span class="badge bg-light text-dark border" v-for="(tag, index) in job.tags"
-                                        :key="index">
-                                        {{ tag }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Related Jobs Section -->
-            <div class="related-jobs-section my-5">
-                <h4 class="section-title mb-4 text-start">Related Jobs</h4>
-                <div class="row">
-                    <div class="col-md-4 mb-4" v-for="(relatedJob, index) in job.relatedJobs"
-                        :key="'related-job-' + index">
-                        <div class="card shadow-sm border-light">
-                            <div class="card-body">
-                                <h5 class="card-title text-start">{{ relatedJob.title }}</h5>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <span class="badge bg-primary text-white">{{ relatedJob.type }}</span>
-                                    <span class="text-muted">Salary: {{ relatedJob.salary }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <p class="card-text text-muted mb-0">
-                                        <i class="bi bi-geo-alt me-2"></i>{{ relatedJob.location }}
-                                    </p>
-                                    <i class="bi bi-bookmark"></i>
+                                    <span class="badge bg-light text-dark border">Frontend</span>
+                                    <span class="badge bg-light text-dark border">Vue.js</span>
+                                    <span class="badge bg-light text-dark border">Web Development</span>
                                 </div>
                             </div>
                         </div>
@@ -241,22 +172,6 @@ export default {
             error: null
         }
     },
-    computed: {
-        job() {
-            return {
-                title: this.job.title,
-                description: this.job.description,
-                requirements: this.job.requirements ? this.job.requirements.split(',') : [],
-                benefits: this.job.benefits ? this.job.benefits.split(',') : [],
-                work_type: this.job.work_type,
-                location: this.job.location,
-                salary: `${this.job.min_salary} - ${this.job.max_salary}`,
-                posted: new Date(this.job.created_at).toLocaleDateString(),
-                expires: new Date(this.job.deadline).toLocaleDateString(),
-                remote: this.job.work_type === 'remote' ? 'Remote' : 'On-site',
-            };
-        }
-    },
     created() {
         this.fetchJobDetails();
     },
@@ -270,7 +185,7 @@ export default {
                         'Accept': 'application/json'
                     }
                 });
-                this.job = response.data.job; 
+                this.job = response.data.job;
             } catch (err) {
                 console.error("Error fetching job details:", err);
                 this.error = err.response?.data?.message ||
@@ -278,6 +193,10 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+        formatDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
         }
     }
 }
@@ -286,11 +205,6 @@ export default {
 <style scoped>
 .container {
     background-color: #ffffff;
-}
-
-.related-jobs-section {
-    border-top: 1px solid #ddd;
-    padding-top: 20px;
 }
 
 .job-info-card {
@@ -305,5 +219,20 @@ export default {
 
 .description-text {
     white-space: pre-line;
+}
+
+.requirements-list,
+.benefits-list {
+    padding-left: 20px;
+}
+
+.requirement-item,
+.benefit-item {
+    margin-bottom: 8px;
+}
+
+.company-logo-placeholder {
+    background-color: #f8f9fa;
+    color: #6c757d;
 }
 </style>

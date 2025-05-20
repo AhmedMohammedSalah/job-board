@@ -12,30 +12,30 @@ import JobDetails from "../pages/Singel_Job-Apply_Job/JobDetails.vue";
 import ApplyJob from "../pages/Singel_Job-Apply_Job/ApplyJob.vue";
 import ThankYouPage from "../pages/Singel_Job-Apply_Job/ThankYouPage.vue";
 
-import CandidateLayout from "../layouts/CandidateLayout.vue";
+// import CandidateLayout from "../layouts/CandidateLayout.vue";
 const routes = [
   {
     path: "/",
     name: "Home",
     component: Home,
   },
-  {
-    path: "/candidate",
-    name: "candidate",
-    component: CandidateLayout,
-    // children: [
-    //   {
-    //     path: "",
-    //     name: "candidate-overview",
-    //     component: CandidateOverview,
-    //   },
-    //   {
-    //     path: "applied-jobs",
-    //     name: "applied-jobs",
-    //     component: AppliedJobs,
-    //   },
-    // ],
-  },
+  // {
+  //   path: "/candidate",
+  //   name: "candidate",
+  //   component: CandidateLayout,
+  //   // children: [
+  //   //   {
+  //   //     path: "",
+  //   //     name: "candidate-overview",
+  //   //     component: CandidateOverview,
+  //   //   },
+  //   //   {
+  //   //     path: "applied-jobs",
+  //   //     name: "applied-jobs",
+  //   //     component: AppliedJobs,
+  //   //   },
+  //   // ],
+  // },
   {
     path: "/register",
     name: "Register",

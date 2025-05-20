@@ -95,6 +95,7 @@ export default {
         },
         async submitForm() {
             this.submitError = '';
+
             if (!this.validateForm()) {
                 return;
             }
@@ -104,7 +105,12 @@ export default {
             const formData = new FormData();
             formData.append('job_id', this.jobId);
             formData.append('cover_letter', this.form.coverLetter);
-            formData.append('resume', this.form.resume);
+            formData.append('resume_path', this.form.resume);
+
+            const candidateId = localStorage.getItem('candidate_id');
+            formData.append('candidate_id', candidateId);
+
+            formData.append('status', 'pending');
 
             try {
                 const token = localStorage.getItem('auth_token');
@@ -112,7 +118,9 @@ export default {
                 const response = await axios.post('http://127.0.0.1:8000/api/applications', formData, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'multipart/form-data'
+                    }
                 });
 
                 this.$router.push({
@@ -122,14 +130,20 @@ export default {
                         jobTitle: this.jobTitle
                     }
                 });
+
             } catch (error) {
-                this.submitError = error.response?.data?.message ||
-                    'Something went wrong while submitting your application. Please try again later.';
-                console.error('Application error:', error);
+                if (error.response?.status === 422 && error.response.data?.errors) {
+                    this.submitError = Object.values(error.response.data.errors).flat().join(', ');
+                } else {
+                    this.submitError = error.response?.data?.message ||
+                        'Something went wrong while submitting your application. Please try again later.';
+                }
+                console.error('Validation errors:', error.response?.data?.errors);
             } finally {
                 this.submitting = false;
             }
         }
+
     }
 }
 </script>
