@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Mail;
 // use Illuminate\Support\Facades\Auth;
 
 
-class JobController extends Controller
+class JobPostController extends Controller
 {
     /**
      * Display all jobs for the employer
