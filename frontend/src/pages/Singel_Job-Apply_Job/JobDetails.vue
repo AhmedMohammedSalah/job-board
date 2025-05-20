@@ -1,155 +1,195 @@
 <template>
-    <div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
-        <div class="container bg-white rounded shadow-sm p-4" style="max-width: 1200px;">
-            <div v-if="loading || error" class="d-flex justify-content-center align-items-center vh-100">
-                <div v-if="loading" class="text-center">
+    <div class="job-details-page">
+        <AppHeader class="header" />
+        <Navbar class="navbar" />
+
+        <div class="breadcrumb-wrapper w-100 py-3 bg-light">
+            <div class="container">
+                <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <RouterLink :to="{ name: 'Home' }" class="text-decoration-none">Home</RouterLink>
+                        </li>
+                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Find Job</a></li>
+                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Graphics & Design</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Job Details</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <div v-if="loading" class="d-flex justify-content-center align-items-center vh-100">
+                <div class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <p class="mt-3 fw-semibold text-secondary fs-5">Loading job details...</p>
                 </div>
+            </div>
 
-                <div v-else-if="error" class="alert alert-danger d-flex align-items-center gap-3 shadow rounded-4 p-4"
-                    role="alert" style="max-width: 500px;">
-                    <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+            <div v-else-if="error" class="d-flex justify-content-center align-items-center vh-100">
+                <div class="alert alert-danger d-flex align-items-center gap-3 shadow rounded-4 p-4" role="alert"
+                    style="max-width: 500px;">
+                    <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="fs-3" />
                     <div class="flex-grow-1 fs-6">
                         {{ error }}
                     </div>
                 </div>
             </div>
 
-            <div v-else class="p-4">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <!-- Logo + Info -->
+            <div v-else class="content p-4">
+                <div class="job-header d-flex justify-content-between align-items-center mb-4">
                     <div class="d-flex align-items-center">
-                        <div class="company-logo-placeholder rounded-circle me-3 d-flex align-items-center justify-content-center"
-                            style="width: 60px; height: 60px; background-color: #f0f0f0;">
-                            <i class="bi bi-building text-muted fs-4"></i>
+                        <div class="company-logo rounded-circle me-3 d-flex align-items-center justify-content-center">
+                            <font-awesome-icon :icon="['fas', 'building']" class="text-muted fs-4" />
                         </div>
                         <div>
                             <h5 class="mb-1 fw-bold">{{ job.title }}</h5>
-                            <p class="mb-1 text-muted d-flex align-items-center">
-                                <span class="badge bg-success me-2">{{ job.work_type }}</span>
-                                <span class="badge bg-light text-danger border">Featured</span>
-                            </p>
+                            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
+                                <span class="badge bg-success">{{ job.work_type }}</span>
+                                <span class="badge bg-warning text-dark">Featured</span>
+                                <span class="badge bg-info" v-if="job.status === 'open'">Hiring</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Button -->
-                    <div class="d-flex align-items-center gap-2">
-                        <router-link :to="{ name: 'ApplyJob', query: { jobId: id, jobTitle: job.title } }"
-                            class="btn btn-primary d-flex align-items-center">
-                            Apply Now
-                            <i class="bi bi-arrow-right ms-2"></i>
-                        </router-link>
-                    </div>
+                    <router-link :to="{ name: 'ApplyJob', query: { jobId: id, jobTitle: job.title } }"
+                        class="btn btn-primary d-flex align-items-center apply-btn">
+                        Apply Now
+                        <font-awesome-icon :icon="['fas', 'arrow-right']" class="ms-2" />
+                    </router-link>
                 </div>
 
-                <div class="row mb-5">
-                    <!-- Left Column -->
-                    <div class="col-md-6">
-                        <div class="job-description-container text-start">
-                            <!-- Description Section -->
-                            <div class="description-section mb-4">
-                                <h4 class="section-title mb-3">Job Description</h4>
-                                <p class="description-text">{{ job.description }}</p>
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="job-content">
+                            <div class="mb-5">
+                                <h4 class="section-title mb-3 fw-bold text-primary">Job Description</h4>
+                                <div class="description-text" v-html="formatText(job.description)"></div>
                             </div>
-
-                            <!-- Requirements Section -->
-                            <div class="requirements-section mb-4">
-                                <h4 class="section-title mb-3">Requirements</h4>
-                                <ul class="requirements-list">
-                                    <li class="requirement-item">
-                                        {{ job.requirements }}
-                                    </li>
-                                </ul>
+                            <div class="mb-5">
+                                <h4 class="section-title mb-3 fw-bold text-primary">Requirements</h4>
+                                <div class="requirements-list" v-html="formatText(job.requirements)"></div>
                             </div>
-
-                            <!-- Benefits Section -->
-                            <div class="benefits-section mb-4">
-                                <h4 class="section-title mb-3">Benefits</h4>
-                                <ul class="benefits-list">
-                                    <li class="benefit-item">
-                                        {{ job.benefits }}
-                                    </li>
-                                </ul>
+                            <div class="mb-4">
+                                <h4 class="section-title mb-3 fw-bold text-primary">Benefits</h4>
+                                <div class="benefits-list" v-html="formatText(job.benefits)"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Column -->
-                    <div class="col-md-6">
-                        <div class="job-info-card card shadow-sm p-4 mb-4">
-                            <!-- Salary & Location -->
-                            <div class="row mb-4 border p-3 rounded">
-                                <div class="col-md-6">
-                                    <h6 class="section-title text-muted mb-2">Salary (EGP)</h6>
-                                    <p class="salary-amount fw-bold text-success">
-                                        {{ job.min_salary }} - {{ job.max_salary }}
-                                    </p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="section-title text-muted mb-2">Job Location</h6>
-                                    <p class="location text-muted">{{ job.location }}</p>
+                    <div class="col-lg-5">
+                        <div class="job-summary-card card shadow-sm position-relative">
+                            <div class=" position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-primary text-light">
+                                <i class="bi bi-globe me-1"></i>
+                                {{ job.work_type === 'remote' ? 'Remote' : 'On-site' }}
+                            </span>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <div class="salary-location mb-4 p-3 bg-light rounded">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3 mb-md-0">
+                                        <h6 class="text-muted mb-2">
+                                            <font-awesome-icon :icon="['fas', 'money-bill-wave']" class="me-2" />
+                                            Salary
+                                        </h6>
+                                        <p class="fw-bold text-success mb-0">
+                                            EGP {{ job.min_salary }} - {{ job.max_salary }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted mb-2">
+                                            <font-awesome-icon :icon="['fas', 'map-marker-alt']" class="me-2" />
+                                            Location
+                                        </h6>
+                                        <p class="fw-bold mb-0">{{ job.location }}</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Remote Job -->
-                            <div class="position-absolute top-1 end-0 translate-middle-y" style="right: -20px;">
-                                <span class="badge bg-primary text-light">
-                                    <i class="bi bi-globe me-1"></i> {{ job.work_type === 'remote' ? 'Remote' :
-                                    'On-site' }}
-                                </span>
-                            </div>
-
-                            <!-- Job Overview -->
-                            <div class="border p-3 rounded">
-                                <h6 class="section-title text-muted mb-3 text-start">Job Overview</h6>
+                            <div class="job-overview mb-4 p-3 border rounded">
+                                <h5 class="text-muted mb-3 fw-bold">
+                                    <font-awesome-icon :icon="['fas', 'info-circle']" class="me-2" />
+                                    Job Overview
+                                </h5>
                                 <div class="row text-center">
-                                    <div class="col-md-6 mb-3">
-                                        <div class="d-flex flex-column align-items-center">
-                                            <i class="bi bi-calendar-x text-primary mb-1 fs-4"></i>
-                                            <p class="small text-muted mb-1">APPLICATION DEADLINE</p>
-                                            <p class="fw-bold">{{ formatDate(job.deadline) }}</p>
-                                        </div>
+                                    <div class="col-6 mb-3">
+                                        <font-awesome-icon :icon="['fas', 'calendar-alt']"
+                                            class="text-primary mb-2 fs-4" />
+                                        <p class="small text-muted mb-1">Posted On</p>
+                                        <p class="fw-bold">{{ formatDate(job.created_at) }}</p>
                                     </div>
-                                    <div class="col-md-6 mb-3">
-                                        <div class="d-flex flex-column align-items-center">
-                                            <i class="bi bi-bar-chart-line text-primary mb-1 fs-4"></i>
-                                            <p class="small text-muted mb-1">STATUS</p>
-                                            <p class="fw-bold text-capitalize">{{ job.status }}</p>
-                                        </div>
+                                    <div class="col-6 mb-3">
+                                        <font-awesome-icon :icon="['fas', 'clock']" class="text-primary mb-2 fs-4" />
+                                        <p class="small text-muted mb-1">Deadline</p>
+                                        <p class="fw-bold">{{ formatDate(job.deadline) }}</p>
                                     </div>
-                                </div>
-
-                                <!-- Share Section -->
-                                <div class="share-section mb-4">
-                                    <h6 class="section-title text-muted mb-2 text-start">Share this job:</h6>
-                                    <div class="d-flex align-items-center gap-3 flex-wrap">
-                                        <button class="btn btn-outline-primary btn-sm d-flex align-items-center">
-                                            <i class="bi bi-link-45deg me-1"></i>
-                                            Copy Links
-                                        </button>
-                                        <a href="#" class="text-decoration-none text-primary fs-5"><i
-                                                class="bi bi-facebook"></i></a>
-                                        <a href="#" class="text-decoration-none text-info fs-5"><i
-                                                class="bi bi-twitter"></i></a>
-                                        <a href="#" class="text-decoration-none text-primary fs-5"><i
-                                                class="bi bi-linkedin"></i></a>
-                                        <a href="#" class="text-decoration-none text-primary fs-5"><i
-                                                class="bi bi-envelope-fill"></i></a>
+                                    <div class="col-6">
+                                        <font-awesome-icon :icon="['fas', 'briefcase']"
+                                            class="text-primary mb-2 fs-4" />
+                                        <p class="small text-muted mb-1">Job Type</p>
+                                        <p class="fw-bold text-capitalize">{{ job.work_type }}</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <font-awesome-icon :icon="['fas', 'chart-line']"
+                                            class="text-primary mb-2 fs-4" />
+                                        <p class="small text-muted mb-1">Status</p>
+                                        <p class="fw-bold text-capitalize">{{ job.status }}</p>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Job Tags -->
-                                <div class="tags-section">
-                                    <h6 class="section-title text-muted mb-2 text-start">Job tags:</h6>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge bg-light text-dark border">Frontend</span>
-                                        <span class="badge bg-light text-dark border">Vue.js</span>
-                                        <span class="badge bg-light text-dark border">Web Development</span>
-                                    </div>
+                            <div class="share-job mb-4">
+                                <h5 class="text-muted mb-3 fw-bold">
+                                    Share this job:
+                                </h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button @click="copyLink"
+                                        class="btn btn-outline-primary d-flex align-items-center gap-1">
+                                        <font-awesome-icon :icon="['fas', 'link']" />
+                                        Copy Link
+                                    </button>
+
+                                    <a :href="linkedInUrl" target="_blank" rel="noopener"
+                                        class="btn btn-outline-primary d-flex align-items-center justify-content-center p-2"
+                                        style="width: 38px; height: 38px;">
+                                        <font-awesome-icon :icon="['fab', 'linkedin-in']" />
+                                    </a>
+                                    <a :href="facebookUrl" target="_blank" rel="noopener"
+                                        class="btn btn-outline-primary d-flex align-items-center justify-content-center p-2"
+                                        style="width: 38px; height: 38px;">
+                                        <font-awesome-icon :icon="['fab', 'facebook-f']" />
+                                    </a>
+                                    <a :href="twitterUrl" target="_blank" rel="noopener"
+                                        class="btn btn-outline-primary d-flex align-items-center justify-content-center p-2"
+                                        style="width: 38px; height: 38px;">
+                                        <font-awesome-icon :icon="['fab', 'twitter']" />
+                                    </a>
+                                    <a :href="mailtoUrl" target="_blank" rel="noopener"
+                                        class="btn btn-outline-primary d-flex align-items-center justify-content-center p-2"
+                                        style="width: 38px; height: 38px;">
+                                        <font-awesome-icon :icon="['fas', 'envelope']" />
+                                    </a>
+                                </div>
+                                <div v-if="copySuccess" class="text-success mt-2">
+                                    Link copied to clipboard!
+                                </div>
+                            </div>
+
+                            <div class="job-tags">
+                                <h5 class="text-muted mb-3 fw-bold">
+                                    <font-awesome-icon :icon="['fas', 'tags']" class="me-2" />
+                                    Job Tags
+                                </h5>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge bg-light text-dark border">Frontend</span>
+                                    <span class="badge bg-light text-dark border">Vue.js</span>
+                                    <span class="badge bg-light text-dark border">Web Development</span>
+                                    <span class="badge bg-light text-dark border">JavaScript</span>
+                                    <span class="badge bg-light text-dark border">HTML/CSS</span>
                                 </div>
                             </div>
                         </div>
@@ -158,18 +198,32 @@
             </div>
         </div>
     </div>
+    </div>
 </template>
 
+
 <script>
+import AppHeader from '../../components/homePage/AppHeader.vue';
+import Navbar from '../../components/homePage/Navbar.vue';
 import axios from 'axios';
+import { RouterLink } from 'vue-router';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 export default {
+    name: 'JobDetails',
+    components: {
+        AppHeader,
+        Navbar,
+        RouterLink,
+        FontAwesomeIcon
+    },
     props: ['id'],
     data() {
         return {
             job: {},
             loading: true,
-            error: null
+            error: null,
+            copySuccess: false
         }
     },
     created() {
@@ -177,6 +231,8 @@ export default {
     },
     methods: {
         async fetchJobDetails() {
+            this.loading = true;
+            this.error = null;
             const token = localStorage.getItem('auth_token');
             try {
                 const response = await axios.get(`http://127.0.0.1:8000/api/singleJob/${this.id}`, {
@@ -187,57 +243,147 @@ export default {
                 });
                 this.job = response.data.job;
             } catch (err) {
-                console.error("Error fetching job details:", err);
-                this.error = err.response?.data?.message ||
-                    "Failed to load job details. Please try again later.";
+                this.error = err.response?.data?.message || "Failed to load job details. Please try again later.";
             } finally {
                 this.loading = false;
             }
         },
         formatDate(dateString) {
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            return new Date(dateString).toLocaleDateString(undefined, options);
+            if (!dateString) return 'N/A';
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        },
+        formatText(text) {
+            if (!text) return '';
+            return text.replace(/\n/g, '<br>');
+        },
+        copyLink() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                this.copySuccess = true;
+                setTimeout(() => {
+                    this.copySuccess = false;
+                }, 3000);
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+            });
         }
     }
 }
 </script>
 
+
+
 <style scoped>
-.min-vh-100 {
+.job-details-page {
+    background-color: white;
     min-height: 100vh;
 }
 
-.container {
-    background-color: #ffffff;
-    margin: 20px auto;
+.header,
+.breadcrumb-wrapper {
+    background-color: #eeeeee;
+    border-radius: 0 0 8px 8px;
 }
 
-.job-info-card {
-    position: sticky;
-    top: 20px;
+.breadcrumb-item a {
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.2s;
 }
 
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
+.breadcrumb-item a:hover {
+    color: #334155;
 }
 
-.description-text {
-    white-space: pre-line;
+.breadcrumb-item.active {
+    color: #334155;
+    font-weight: 500;
 }
 
-.requirements-list,
-.benefits-list {
-    padding-left: 20px;
+.breadcrumb-item+.breadcrumb-item::before {
+    content: "›";
+    padding: 0 8px;
+    color: #94a3b8;
 }
 
-.requirement-item,
-.benefit-item {
-    margin-bottom: 8px;
+.job-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.company-logo-placeholder {
-    background-color: #f8f9fa;
-    color: #6c757d;
+.company-logo {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-primary {
+    color: #3b82f6 !important;
+}
+
+.bg-primary {
+    background-color: #3b82f6 !important;
+}
+
+@media (max-width: 768px) {
+    .job-title {
+        font-size: 1.5rem;
+    }
+
+    .company-logo {
+        width: 60px;
+        height: 60px;
+    }
+
+    .job-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .breadcrumb-nav {
+        font-size: 0.85rem;
+    }
+
+    .job-title {
+        font-size: 1.3rem;
+    }
 }
 </style>
+
