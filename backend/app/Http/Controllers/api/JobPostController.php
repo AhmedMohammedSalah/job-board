@@ -1,4 +1,5 @@
 <?php
+namespace App\Http\Controllers\api;
 
 namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-
+// use ApplicationStatus;
+use App\Enums\ApplicationStatus;
 
 // use Illuminate\Support\Facades\Auth;
 
@@ -195,7 +197,7 @@ class JobPostController extends Controller
 
     // public function update(Request $request, $id)
     // {
-        
+
     //     $validator = Validator::make($request->all(), [
     //         'title' => 'sometimes|string|max:255',
     //         'description' => 'sometimes|string',
@@ -218,7 +220,7 @@ class JobPostController extends Controller
     //     }
 
     //     $user = Auth::user();
-        
+
     //     $job = Job::where('id', $id)
     //         ->where('employer_id', $user->employer->id)
     //         ->first();
@@ -352,7 +354,7 @@ class JobPostController extends Controller
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         // Find the job with different conditions based on user role
         if ($user->isAdmin()) {
             $job = Job::find($id);
@@ -369,7 +371,7 @@ class JobPostController extends Controller
         // Admin-specific updates
         if ($user->isAdmin() && $request->has('status')) {
             $updateData = ['status' => $request->status];
-            
+
             if ($request->status === 'approved') {
                 $updateData['approved_at'] = now();
                 $updateData['is_active'] = true;
@@ -377,9 +379,9 @@ class JobPostController extends Controller
                 $updateData['rejection_reason'] = $request->rejection_reason;
                 $updateData['is_active'] = false;
             }
-            
+
             $job->update($updateData);
-            
+
             // Here you would add notification logic
             return response()->json([
                 'message' => 'Job status updated successfully',
@@ -409,7 +411,7 @@ class JobPostController extends Controller
     public function pendingJobs()
     {
         $this->authorize('admin', User::class);
-        
+
         $jobs = Job::where('status', 'pending')
             ->with('employer.user')
             ->orderBy('created_at', 'desc')
@@ -422,7 +424,7 @@ class JobPostController extends Controller
     public function approveJob($id)
     {
         $this->authorize('admin', User::class);
-        
+
         return $this->update(new Request([
             'status' => 'approved'
         ]), $id);
@@ -431,7 +433,7 @@ class JobPostController extends Controller
     public function rejectJob(Request $request, $id)
     {
         $this->authorize('admin', User::class);
-        
+
         return $this->update(new Request([
             'status' => 'rejected',
             'rejection_reason' => $request->rejection_reason
@@ -484,7 +486,7 @@ class JobPostController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->employer) {
+        if ($user->role!="employer") {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
@@ -493,7 +495,7 @@ class JobPostController extends Controller
 
         return DB::transaction(function () use ($jobId, $applicationId, $user) {
             $job = Job::where('id', $jobId)
-                ->where('employer_id', $user->employer->id)
+                ->where('employer_id', $user->id)
                 ->first();
 
             if (!$job) {
@@ -515,20 +517,14 @@ class JobPostController extends Controller
                 ], 404);
             }
 
-            $application->status = 'hired';
-            $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application accepted.";
+            $application->status = ApplicationStatus::ACCEPTED->value;
+            // $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application accepted.";
             $application->save();
 
             return response()->json([
                 'status' => 'success',
                 'data' => [
-                    'application' => [
-                        'id' => $application->id,
-                        'status' => $application->status,
-                        'applicant_name' => $application->user->name,
-                        'applicant_email' => $application->user->email,
-                        'job_title' => $job->title
-                    ]
+                    'application' => $application
                 ],
                 'message' => 'Application accepted successfully'
             ]);
@@ -659,8 +655,8 @@ class JobPostController extends Controller
      * Toggle job active status
      */
 
-    
-        
+
+
     public function toggleActive(string $id)
     {
         $user = Auth::user();

@@ -76,10 +76,10 @@ Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
         Route::get('/applications', [JobPostController::class, 'employerApplications']);
 
         // Accept/reject/update a specific application
-        Route::post('/jobs/{jobId}/applications/{applicationId}/accept', [JobPostController::class, 'acceptApplication']);
-        Route::post('/jobs/{jobId}/applications/{applicationId}/reject', [JobPostController::class, 'rejectApplication']);
+        Route::post('/jobs/{jobId}/applications/{applicationId}/accept', [JobPostController::class, 'acceptApplication'])->middleware('auth:sanctum');
+        Route::post('/jobs/{jobId}/applications/{applicationId}/reject', [JobPostController::class, 'rejectApplication'])->middleware('auth:sanctum');
         Route::put('/jobs/{jobId}/applications/{applicationId}/status', [JobPostController::class, 'updateApplicationStatus']);
- 
+
 
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);
