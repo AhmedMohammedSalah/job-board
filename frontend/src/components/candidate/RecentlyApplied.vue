@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-// import JobCard from "@/components/candidate/JobCard.vue";
+import JobCard from "@/components/candidate/JobCard.vue";
 import api from "@/services/api";
 
 const router = useRouter();
