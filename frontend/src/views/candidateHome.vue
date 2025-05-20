@@ -1,31 +1,51 @@
 <template>
   <div class="candidate-home">
     <Navbar />
-    <section1 />
-    <BecomeaCandidate />
-
-    <!-- Main Content Area -->
+    
     <main class="main-content">
-      <!-- Filter Button -->
       <button @click="toggleSidebar" class="filter-toggle-btn">
         <i class="fas fa-filter"></i> Filters
       </button>
 
-      <Popular :jobs="filteredJobs" />
+      <section class="jobs-section">
+        <h2 class="section-title">Available Jobs</h2>
+        
+        <div v-if="loading" class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i> Loading jobs...
+        </div>
+        
+        <div v-else-if="error" class="error-state">
+          <i class="fas fa-exclamation-circle"></i> {{ error }}
+          <button @click="fetchJobs">Retry</button>
+        </div>
+        
+        <div v-else>
+          <div class="jobs-grid">
+            <JobCard 
+              v-for="job in filteredJobs" 
+              :key="job.id" 
+              :job="job"
+              :employer="job.employer || { name: 'Unknown Company' }"
+              @apply="handleJobApply"
+            />
+          </div>
+          
+          <div v-if="filteredJobs.length === 0" class="no-jobs">
+            <i class="fas fa-briefcase"></i>
+            <p>No jobs match your filters</p>
+            <button @click="clearFilters">Clear filters</button>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <!-- Filter Sidebar -->
-    <transition name="slide">
-      <FilterSidebar 
-        v-if="showSidebar"
-        :filters="activeFilters"
-        @update:filters="updateFilters"
-        @close="showSidebar = false"
-        class="filter-sidebar"
-      />
-    </transition>
+    <FilterSidebar 
+      v-if="showSidebar"
+      :filters="activeFilters"
+      @update:filters="updateFilters"
+      @close="showSidebar = false"
+    />
 
-    <!-- Overlay -->
     <div 
       v-if="showSidebar"
       class="sidebar-overlay" 
@@ -37,78 +57,65 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
-import Popular from '../components/homePage/Popular.vue';
+import { ref, computed, onMounted } from 'vue';
+import axios from '../axios';
 import Navbar from '../components/homePage/Navbar.vue';
-import AppHeader from '../components/homePage/AppHeader.vue';
 import AppFooter from '../components/homePage/AppFooter.vue';
-import section1 from '../components/homePage/section1.vue';
-import BecomeaCandidate from '../components/homePage/BecomeaCandidate.vue';
 import FilterSidebar from '../components/FilterSidebar.vue';
+import JobCard from '../components/JobCard.vue';
 
 export default {
   name: 'CandidateHomePage',
-  components: { 
-    Navbar,
-    AppHeader,
-    section1,
-    Popular,
-    BecomeaCandidate,
-    AppFooter,
-    FilterSidebar
-  },
+  components: { Navbar, AppFooter, FilterSidebar, JobCard },
   setup() {
     const showSidebar = ref(false);
+    const loading = ref(false);
+    const error = ref(null);
+    const allJobs = ref([]);
     const activeFilters = ref({
       search: '',
-      category: '',
-      jobType: '',
-      minSalary: null,
-      maxSalary: null,
-      remoteOnly: false
+      work_type: '',
+      min_salary: null,
+      max_salary: null,
+      remote: false
     });
 
-    // Sample jobs data - replace with your actual data
-    const allJobs = ref([
-      {
-        id: 1,
-        title: 'UI/UX Designer',
-        category: 'Design',
-        location: 'Prague, Czech Republic',
-        salary: 90000,
-        type: 'Full Time',
-        remote: true
-      },
-      // Add more job objects
-    ]);
+    const fetchJobs = async () => {
+      try {
+        loading.value = true;
+        error.value = null;
+        const response = await axios.get('/api/jobs');
+        allJobs.value = response.data;
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+        error.value = err.response?.data?.message || 'Failed to load jobs';
+      } finally {
+        loading.value = false;
+      }
+    };
 
-    const filteredJobs = computed(() => {
-      return allJobs.value.filter(job => {
-        // Search filter
-        const matchesSearch = !activeFilters.value.search || 
-          job.title.toLowerCase().includes(activeFilters.value.search.toLowerCase()) ||
-          job.location.toLowerCase().includes(activeFilters.value.search.toLowerCase());
+    const fetchFilteredJobs = async () => {
+      try {
+        loading.value = true;
+        const params = {
+          search: activeFilters.value.search,
+          work_type: activeFilters.value.work_type,
+          min_salary: activeFilters.value.min_salary,
+          max_salary: activeFilters.value.max_salary,
+          remote: activeFilters.value.remote
+        };
+        
+        const response = await axios.get('/api/jobs/filter', { params });
+        allJobs.value = response.data;
+      } catch (err) {
+        console.error('Error filtering jobs:', err);
+        error.value = err.response?.data?.message || 'Failed to filter jobs';
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        // Category filter
-        const matchesCategory = !activeFilters.value.category || 
-          job.category === activeFilters.value.category;
-
-        // Job type filter
-        const matchesJobType = !activeFilters.value.jobType || 
-          job.type === activeFilters.value.jobType;
-
-        // Salary filter
-        const matchesSalary = (!activeFilters.value.minSalary || 
-          job.salary >= activeFilters.value.minSalary) && 
-          (!activeFilters.value.maxSalary || job.salary <= activeFilters.value.maxSalary);
-
-        // Remote filter
-        const matchesRemote = !activeFilters.value.remoteOnly || job.remote;
-
-        return matchesSearch && matchesCategory && matchesJobType && 
-               matchesSalary && matchesRemote;
-      });
-    });
+    const filteredJobs = computed(() => allJobs.value);
 
     const toggleSidebar = () => {
       showSidebar.value = !showSidebar.value;
@@ -116,18 +123,54 @@ export default {
 
     const updateFilters = (newFilters) => {
       activeFilters.value = newFilters;
+      fetchFilteredJobs();
     };
+
+    const handleJobApply = async (jobId) => {
+      try {
+        await axios.post('/api/applications', { job_id: jobId });
+        const jobIndex = allJobs.value.findIndex(job => job.id === jobId);
+        if (jobIndex !== -1) {
+          allJobs.value[jobIndex].applied = true;
+        }
+      } catch (err) {
+        console.error('Error applying to job:', err);
+        alert(err.response?.data?.message || 'Failed to apply for job');
+      }
+    };
+
+    const clearFilters = () => {
+      activeFilters.value = {
+        search: '',
+        work_type: '',
+        min_salary: null,
+        max_salary: null,
+        remote: false
+      };
+      showSidebar.value = false;
+      fetchJobs();
+    };
+
+    onMounted(() => {
+      fetchJobs();
+    });
 
     return {
       showSidebar,
+      loading,
+      error,
       activeFilters,
       filteredJobs,
       toggleSidebar,
-      updateFilters
+      updateFilters,
+      handleJobApply,
+      clearFilters
     };
   }
 }
 </script>
+
+
 
 <style scoped>
 .candidate-home {
@@ -169,10 +212,6 @@ export default {
   transform: translateY(-2px);
 }
 
-.filter-toggle-btn i {
-  font-size: 1rem;
-}
-
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -183,30 +222,82 @@ export default {
   z-index: 95;
 }
 
-/* Animation for sidebar */
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.3s ease;
+.jobs-section {
+  margin-top: 2rem;
 }
 
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(100%);
+.section-title {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #1e293b;
+  font-weight: 600;
 }
 
-.filter-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 320px;
-  height: 100vh;
-  background: white;
-  z-index: 100;
-  overflow-y: auto;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
 
-/* Responsive adjustments */
+.no-jobs {
+  text-align: center;
+  padding: 3rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-top: 2rem;
+}
+
+.no-jobs i {
+  font-size: 2rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.no-jobs p {
+  color: #64748b;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.no-jobs button {
+  padding: 0.5rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.no-jobs button:hover {
+  background: #2563eb;
+}
+
+.loading-state, .error-state {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.loading-state i {
+  margin-right: 0.5rem;
+}
+
+.error-state {
+  color: #ef4444;
+}
+
+.error-state button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .filter-sidebar {
     width: 100%;
@@ -216,6 +307,10 @@ export default {
   .filter-toggle-btn {
     bottom: 1rem;
     right: 1rem;
+  }
+
+  .jobs-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

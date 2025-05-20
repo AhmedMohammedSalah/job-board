@@ -1,220 +1,191 @@
 <template>
   <aside class="filter-sidebar">
     <div class="filter-header">
-      <h3>Filter</h3>
+      <h3>Filter Jobs</h3>
+      <button class="close-btn" @click="$emit('close')">×</button>
       <button v-if="activeFilterCount > 0" @click="clearAllFilters" class="clear-all">
         Clear all
       </button>
     </div>
 
-    <!-- Active Filters -->
     <div class="active-filters" v-if="activeFilterCount > 0">
       <h4>Active Filters:</h4>
       <div class="filter-chips">
-        <div v-if="filters.search" class="filter-chip">
-          Search: {{ filters.search }}
+        <div v-if="localFilters.search" class="filter-chip">
+          Search: "{{ localFilters.search }}"
           <button @click="removeFilter('search')">×</button>
         </div>
-        <div v-if="filters.category" class="filter-chip">
-          {{ filters.category }}
-          <button @click="removeFilter('category')">×</button>
+        <div v-if="localFilters.work_type" class="filter-chip">
+          {{ formatWorkType(localFilters.work_type) }}
+          <button @click="removeFilter('work_type')">×</button>
         </div>
-        <div v-if="filters.jobType" class="filter-chip">
-          {{ filters.jobType }}
-          <button @click="removeFilter('jobType')">×</button>
-        </div>
-        <div v-if="filters.minSalary || filters.maxSalary" class="filter-chip">
-          Salary ${{ filters.minSalary }}-${{ filters.maxSalary }}
+        <div v-if="localFilters.min_salary || localFilters.max_salary" class="filter-chip">
+          Salary: ${{ localFilters.min_salary || '0' }} - ${{ localFilters.max_salary || '∞' }}
           <button @click="removeSalaryFilter()">×</button>
+        </div>
+        <div v-if="localFilters.remote" class="filter-chip">
+          Remote Only
+          <button @click="removeFilter('remote')">×</button>
         </div>
       </div>
     </div>
 
-    <!-- Search Filter -->
     <div class="filter-group">
-      <label>Search</label>
+      <label>Search Keywords</label>
       <input 
         type="text" 
         v-model="localFilters.search" 
-        placeholder="UI/UX, Prague, Czech" 
-        @input="debounceFilter"
+        placeholder="Job title, company, or keywords"
       >
     </div>
 
-    <!-- Industry/Category Filter -->
-    <div class="filter-group">
-      <label>Industry</label>
-      <select v-model="localFilters.category">
-        <option value="">All Category</option>
-        <option v-for="category in categories" :value="category">
-          {{ category }}
-        </option>
-      </select>
-    </div>
-
-    <!-- Job Type Filter -->
     <div class="filter-group">
       <label>Job Type</label>
       <div class="checkbox-group">
-        <label v-for="type in jobTypes">
+        <label v-for="type in jobTypes" :key="type.value">
           <input 
             type="radio" 
-            v-model="localFilters.jobType" 
+            v-model="localFilters.work_type" 
             :value="type.value"
+            name="work_type"
           >
           {{ type.label }}
         </label>
       </div>
     </div>
 
-    <!-- Salary Range Filter -->
     <div class="filter-group">
-      <label>Salary (yearly)</label>
+      <label>Salary Range ($/year)</label>
       <div class="salary-range">
         <div class="salary-inputs">
           <input 
             type="number" 
-            v-model="localFilters.minSalary" 
+            v-model="localFilters.min_salary" 
             placeholder="Min"
+            min="0"
           >
-          <span>-</span>
+          <span>to</span>
           <input 
             type="number" 
-            v-model="localFilters.maxSalary" 
+            v-model="localFilters.max_salary" 
             placeholder="Max"
+            min="0"
           >
-        </div>
-        <div class="preset-ranges">
-          <button 
-            v-for="range in salaryRanges" 
-            @click="setSalaryRange(range.min, range.max)"
-            :class="{ active: isSalaryRangeActive(range) }"
-          >
-            {{ range.label }}
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- Remote Job Filter -->
     <div class="filter-group">
       <label class="remote-filter">
-        <input type="checkbox" v-model="localFilters.remoteOnly">
-        Remote Job
+        <input type="checkbox" v-model="localFilters.remote">
+        Remote Only
       </label>
     </div>
 
-    <button class="apply-btn" @click="applyFilters">Apply Filter</button>
+    <button class="apply-btn" @click="applyFilters">
+      Apply Filters
+    </button>
   </aside>
 </template>
 
-<script setup>
-import { ref, computed, watch } from 'vue'
-// import { debounce } from 'lodash-es'
+<script>
+export default {
+  props: {
+    filters: {
+      type: Object,
+      required: true,
+      default: () => ({
+        search: '',
+        work_type: '',
+        min_salary: null,
+        max_salary: null,
+        remote: false
+      })
+    }
+  },
+  data() {
+    return {
+      localFilters: { ...this.filters },
+      jobTypes: [
+        { value: 'onsite', label: 'onsite' },
+        { value: 'hyprid', label: 'hyprid' },
+        { value: 'remote', label: 'remote' },
 
-const props = defineProps({
-  filters: {
-    type: Object,
-    required: true
+      ]
+    }
+  },
+  computed: {
+    activeFilterCount() {
+      return Object.values(this.localFilters).filter(val => 
+        val !== '' && val !== null && val !== undefined && val !== false
+      ).length;
+    }
+  },
+  methods: {
+    formatWorkType(type) {
+      const typeMap = {
+        'onsite': 'onsite',
+        'hyprid': 'hyprid',
+        'remote': 'remote'
+      };
+      return typeMap[type] || 'Any Type';
+    },
+    applyFilters() {
+      const filtersToEmit = {
+        ...this.localFilters,
+        min_salary: this.localFilters.min_salary ? Number(this.localFilters.min_salary) : null,
+        max_salary: this.localFilters.max_salary ? Number(this.localFilters.max_salary) : null
+      };
+      this.$emit('update:filters', filtersToEmit);
+      this.$emit('close');
+    },
+    clearAllFilters() {
+      this.localFilters = {
+        search: '',
+        work_type: '',
+        min_salary: null,
+        max_salary: null,
+        remote: false
+      };
+      this.$emit('update:filters', this.localFilters);
+    },
+    removeFilter(filterKey) {
+      if (filterKey === 'remote') {
+        this.localFilters[filterKey] = false;
+      } else {
+        this.localFilters[filterKey] = '';
+      }
+      this.$emit('update:filters', this.localFilters);
+    },
+    removeSalaryFilter() {
+      this.localFilters.min_salary = null;
+      this.localFilters.max_salary = null;
+      this.$emit('update:filters', this.localFilters);
+    }
+  },
+  watch: {
+    filters: {
+      handler(newFilters) {
+        this.localFilters = { ...newFilters };
+      },
+      deep: true
+    }
   }
-})
-
-const emit = defineEmits(['update:filters'])
-
-// Local copy of filters to prevent immediate updates
-const localFilters = ref({ ...props.filters })
-
-// Filter options
-const categories = ref([
-  'Developments',
-  'Business',
-  'Finance & Accounting',
-  'IT & Software',
-  'Office Productivity',
-  'Personal Development',
-  'Design',
-  'Marketing',
-  'Photography & Video'
-])
-
-const jobTypes = ref([
-  { value: 'Full Time', label: 'Full Time' },
-  { value: 'Part-Time', label: 'Part-Time' },
-  { value: 'Internship', label: 'Internship' },
-  { value: 'Temporary', label: 'Temporary' },
-  { value: 'Contract Base', label: 'Contract Base' }
-])
-
-const salaryRanges = ref([
-  { min: 10, max: 100, label: '$10-$100' },
-  { min: 100, max: 1000, label: '$100-$1,000' },
-  { min: 1000, max: 10000, label: '$1,000-$10,000' },
-  { min: 10000, max: 100000, label: '$10,000-$100,000' },
-  { min: 100000, max: null, label: '$100,000 Up' }
-])
-
-// Computed properties
-const activeFilterCount = computed(() => {
-  return Object.values(localFilters.value).filter(val => 
-    val !== '' && val !== null && val !== undefined
-  ).length
-})
-
-// Methods
-const debounceFilter = debounce(() => {
-  emit('update:filters', localFilters.value)
-}, 500)
-
-const applyFilters = () => {
-  emit('update:filters', localFilters.value)
 }
-
-const clearAllFilters = () => {
-  localFilters.value = {
-    search: '',
-    category: '',
-    jobType: '',
-    minSalary: null,
-    maxSalary: null,
-    remoteOnly: false
-  }
-  emit('update:filters', localFilters.value)
-}
-
-const removeFilter = (filterKey) => {
-  localFilters.value[filterKey] = ''
-  emit('update:filters', localFilters.value)
-}
-
-const removeSalaryFilter = () => {
-  localFilters.value.minSalary = null
-  localFilters.value.maxSalary = null
-  emit('update:filters', localFilters.value)
-}
-
-const setSalaryRange = (min, max) => {
-  localFilters.value.minSalary = min
-  localFilters.value.maxSalary = max
-}
-
-const isSalaryRangeActive = (range) => {
-  return localFilters.value.minSalary === range.min && 
-         localFilters.value.maxSalary === range.max
-}
-
-// Watch for external filter changes
-watch(() => props.filters, (newVal) => {
-  localFilters.value = { ...newVal }
-}, { deep: true })
 </script>
 
 <style scoped>
 .filter-sidebar {
-  width: 280px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
   padding: 1.5rem;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
 }
 
 .filter-header {
@@ -228,6 +199,14 @@ watch(() => props.filters, (newVal) => {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
 }
 
 .clear-all {
@@ -283,8 +262,7 @@ watch(() => props.filters, (newVal) => {
 }
 
 .filter-group input[type="text"],
-.filter-group input[type="number"],
-.filter-group select {
+.filter-group input[type="number"] {
   width: 100%;
   padding: 0.5rem;
   border: 1px solid #e2e8f0;
@@ -321,27 +299,6 @@ watch(() => props.filters, (newVal) => {
   flex: 1;
 }
 
-.preset-ranges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.preset-ranges button {
-  padding: 0.25rem 0.5rem;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.preset-ranges button.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
 .remote-filter {
   display: flex;
   align-items: center;
@@ -363,5 +320,12 @@ watch(() => props.filters, (newVal) => {
 
 .apply-btn:hover {
   background: #2563eb;
+}
+
+@media (max-width: 768px) {
+  .filter-sidebar {
+    width: 100%;
+    max-width: 320px;
+  }
 }
 </style>

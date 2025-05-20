@@ -53,6 +53,7 @@ Route::post('/auth/password/reset', [AuthController::class, 'reset']);
 
 //filter
 Route::get('/jobs/filter', [JobController::class, 'filterJobs']);
+Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
 
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);

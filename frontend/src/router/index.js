@@ -9,6 +9,8 @@ import Login from "../components/auth/Login.vue";
 import page from "../components/auth/page.vue";
 import ForgetPassword from "../components/auth/ForgetPassword.vue";
 import ResetPassword from "../components/auth/ResetPassword.vue";
+import PendingJobsView from '../views/PendingJobsView.vue'
+import inventory from "../views/InventoryView.vue"
 
 const routes = [
   {
@@ -51,7 +53,18 @@ const routes = [
     name: "candidateHomePage",
     component: candidateHomePage,
 
-  }
+  },
+    {
+    path: '/inventory',
+    name: 'inventory',
+    component: inventory
+  },
+    {
+    path: '/pending-jobs',
+    name: 'PendingJobs',
+    component: PendingJobsView,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 
 ];
 

@@ -221,58 +221,133 @@ class JobController extends Controller
         ]);
     }
     ///filter
-    public function filterJobs(Request $request)
-{
-    $query = Job::with('category') // Eager load the category relationship
-              ->where('status', 'published');
+//     public function filterJobs(Request $request)
+// {
+//     $query = Job::with('category') // Eager load the category relationship
+//               ->where('status', 'published');
 
-    // Search filter
-    if ($request->has('search')) {
-        $searchTerm = $request->input('search');
-        $query->where(function($q) use ($searchTerm) {
-            $q->where('title', 'like', '%'.$searchTerm.'%')
-              ->orWhere('description', 'like', '%'.$searchTerm.'%')
-              ->orWhere('location', 'like', '%'.$searchTerm.'%');
-        });
-    }
+//     // Search filter
+//     if ($request->has('search')) {
+//         $searchTerm = $request->input('search');
+//         $query->where(function($q) use ($searchTerm) {
+//             $q->where('title', 'like', '%'.$searchTerm.'%')
+//               ->orWhere('description', 'like', '%'.$searchTerm.'%')
+//               ->orWhere('location', 'like', '%'.$searchTerm.'%');
+//         });
+//     }
 
-    // Category filter - now using category_id
-    if ($request->has('category') && $request->input('category') != 'All Category') {
-        $query->whereHas('category', function($q) use ($request) {
-            $q->where('name', $request->input('category'));
-        });
-    }
+//     // Category filter - now using category_id
+//     if ($request->has('category') && $request->input('category') != 'All Category') {
+//         $query->whereHas('category', function($q) use ($request) {
+//             $q->where('name', $request->input('category'));
+//         });
+//     }
 
-    // Job Type filter
-    if ($request->has('employment_type')) {
-        $query->where('employment_type', $request->input('employment_type'));
-    }
+//     // Job Type filter
+//     if ($request->has('work_type')) {
+//         $query->where('work_type', $request->input('work_type'));
+//     }
 
-    // Salary range filter - adjusted for min_salary/max_salary columns
-    if ($request->has('salary_min') || $request->has('salary_max')) {
-        $min = $request->input('salary_min', 0);
-        $max = $request->input('salary_max', PHP_INT_MAX);
+//     // Salary range filter - adjusted for min_salary/max_salary columns
+//     if ($request->has('salary_min') || $request->has('salary_max')) {
+//         $min = $request->input('salary_min', 0);
+//         $max = $request->input('salary_max', PHP_INT_MAX);
         
-        $query->where(function($q) use ($min, $max) {
-            $q->where(function($q) use ($min, $max) {
-                $q->where('min_salary', '>=', $min)
-                  ->where('min_salary', '<=', $max);
-            })->orWhere(function($q) use ($min, $max) {
-                $q->where('max_salary', '>=', $min)
-                  ->where('max_salary', '<=', $max);
+//         $query->where(function($q) use ($min, $max) {
+//             $q->where(function($q) use ($min, $max) {
+//                 $q->where('min_salary', '>=', $min)
+//                   ->where('min_salary', '<=', $max);
+//             })->orWhere(function($q) use ($min, $max) {
+//                 $q->where('max_salary', '>=', $min)
+//                   ->where('max_salary', '<=', $max);
+//             });
+//         });
+//     }
+
+//     // Remote job filter
+//     if ($request->has('remote_job')) {
+//         $query->where('work_type', 'remote');
+//     }
+
+//     $jobs = $query->orderBy('created_at', 'desc')->paginate(10);
+
+//     return response()->json([
+//         'jobs' => $jobs,
+//     ]);
+// }
+
+
+//filter 2
+// app/Http/Controllers/JobController.php
+// public function index()
+// {
+//     $jobs = Job::with(['employer', 'category'])
+//               ->where('status', 'active')
+//               ->latest()
+//               ->get();
+
+//     return response()->json($jobs);
+// }
+
+// 
+
+public function getFilterOptions()
+    {
+        return response()->json([
+            'categories' => Category::select('id', 'name')->get(),
+            'job_types' => Job::select('work_type')
+                            ->distinct()
+                            ->whereNotNull('work_type')
+                            ->get()
+                            ->pluck('work_type'),
+            'salary_ranges' => [
+                'min' => Job::min('min_salary') ?? 0,
+                'max' => Job::max('max_salary') ?? 100000
+            ]
+        ]);
+    }
+
+    public function filterJobs(Request $request)
+    {
+        $query = Job::with(['category', 'employer'])
+                  ->where('status', 'published');
+
+        // Search filter
+        if ($request->has('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('title', 'like', '%'.$request->search.'%')
+                  ->orWhere('description', 'like', '%'.$request->search.'%')
+                  ->orWhereHas('employer', function($q) use ($request) {
+                      $q->where('name', 'like', '%'.$request->search.'%');
+                  });
             });
-        });
+        }
+
+        // Category filter
+        if ($request->has('category')) {
+            $query->whereHas('category', function($q) use ($request) {
+                $q->where('name', $request->category);
+            });
+        }
+
+        // Job Type filter
+        if ($request->has('work_type')) {
+            $query->where('work_type', $request->work_type);
+        }
+
+        // Salary range filter
+        if ($request->has('min_salary') || $request->has('max_salary')) {
+            $min = $request->min_salary ?? 0;
+            $max = $request->max_salary ?? PHP_INT_MAX;
+            
+            $query->where(function($q) use ($min, $max) {
+                $q->where(function($q) use ($min, $max) {
+                    $q->where('min_salary', '<=', $max)
+                      ->where('max_salary', '>=', $min);
+                });
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate(10);
     }
-
-    // Remote job filter
-    if ($request->has('remote_job')) {
-        $query->where('work_type', 'remote');
-    }
-
-    $jobs = $query->orderBy('created_at', 'desc')->paginate(10);
-
-    return response()->json([
-        'jobs' => $jobs,
-    ]);
-}
 }
