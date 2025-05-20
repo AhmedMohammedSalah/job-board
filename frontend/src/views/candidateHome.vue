@@ -1,7 +1,7 @@
 <template>
   <div class="candidate-home">
     <Navbar />
-    
+
     <main class="main-content">
       <button @click="toggleSidebar" class="filter-toggle-btn">
         <i class="fas fa-filter"></i> Filters
@@ -9,27 +9,27 @@
 
       <section class="jobs-section">
         <h2 class="section-title">Available Jobs</h2>
-        
+
         <div v-if="loading" class="loading-state">
           <i class="fas fa-spinner fa-spin"></i> Loading jobs...
         </div>
-        
+
         <div v-else-if="error" class="error-state">
           <i class="fas fa-exclamation-circle"></i> {{ error }}
           <button @click="fetchJobs">Retry</button>
         </div>
-        
+
         <div v-else>
           <div class="jobs-grid">
-            <JobCard 
-              v-for="job in filteredJobs" 
-              :key="job.id" 
+            <JobCard
+              v-for="job in filteredJobs"
+              :key="job.id"
               :job="job"
-              :employer="job.employer || { name: 'Unknown Company' }"
+              :employer="{ name: 'ay7aga' }"
               @apply="handleJobApply"
             />
           </div>
-          
+
           <div v-if="filteredJobs.length === 0" class="no-jobs">
             <i class="fas fa-briefcase"></i>
             <p>No jobs match your filters</p>
@@ -39,16 +39,16 @@
       </section>
     </main>
 
-    <FilterSidebar 
+    <FilterSidebar
       v-if="showSidebar"
       :filters="activeFilters"
       @update:filters="updateFilters"
       @close="showSidebar = false"
     />
 
-    <div 
+    <div
       v-if="showSidebar"
-      class="sidebar-overlay" 
+      class="sidebar-overlay"
       @click="showSidebar = false"
     ></div>
 
@@ -57,15 +57,15 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
-import axios from '../axios';
-import Navbar from '../components/homePage/Navbar.vue';
-import AppFooter from '../components/homePage/AppFooter.vue';
-import FilterSidebar from '../components/FilterSidebar.vue';
-import JobCard from '../components/JobCard.vue';
+import { ref, computed, onMounted } from "vue";
+import axios from "../axios";
+import Navbar from "../components/homePage/Navbar.vue";
+import AppFooter from "../components/homePage/AppFooter.vue";
+import FilterSidebar from "../components/FilterSidebar.vue";
+import JobCard from "../components/JobCard.vue";
 
 export default {
-  name: 'CandidateHomePage',
+  name: "CandidateHomePage",
   components: { Navbar, AppFooter, FilterSidebar, JobCard },
   setup() {
     const showSidebar = ref(false);
@@ -73,49 +73,75 @@ export default {
     const error = ref(null);
     const allJobs = ref([]);
     const activeFilters = ref({
-      search: '',
-      work_type: '',
+      search: "",
+      work_type: "",
       min_salary: null,
       max_salary: null,
-      remote: false
+      remote: false,
     });
+
+    // Debounce function to prevent rapid API calls during filter changes
+    const debounce = (fn, delay) => {
+      let timeoutId;
+      return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn.apply(this, args), delay);
+      };
+    };
 
     const fetchJobs = async () => {
       try {
         loading.value = true;
         error.value = null;
-        const response = await axios.get('/api/jobs');
-        allJobs.value = response.data;
+        const response = await axios.get("/api/jobs/filter");
+        allJobs.value = response.data.map(job => ({
+          ...job,
+          applied: job.applied || false // Ensure applied status exists
+        }));
       } catch (err) {
-        console.error('Error fetching jobs:', err);
-        error.value = err.response?.data?.message || 'Failed to load jobs';
+        console.error("Error fetching jobs:", err);
+        error.value = err.response?.data?.message || "Failed to load jobs";
+        // Consider returning or throwing the error to let the caller handle it
       } finally {
         loading.value = false;
       }
     };
 
-    const fetchFilteredJobs = async () => {
+    // Debounced version of fetchFilteredJobs
+    const debouncedFetchFilteredJobs = debounce(async () => {
       try {
         loading.value = true;
-        const params = {
-          search: activeFilters.value.search,
-          work_type: activeFilters.value.work_type,
-          min_salary: activeFilters.value.min_salary,
-          max_salary: activeFilters.value.max_salary,
-          remote: activeFilters.value.remote
-        };
-        
-        const response = await axios.get('/api/jobs/filter', { params });
-        allJobs.value = response.data;
+        // Clean the params object to remove null/empty values
+        const params = Object.entries(activeFilters.value).reduce((acc, [key, value]) => {
+          if (value !== null && value !== "" && value !== false) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {});
+
+        const response = await axios.get("/api/jobs/filter", { params });
+        allJobs.value = response.data.map(job => ({
+          ...job,
+          applied: job.applied || false
+        }));
       } catch (err) {
-        console.error('Error filtering jobs:', err);
-        error.value = err.response?.data?.message || 'Failed to filter jobs';
+        console.error("Error filtering jobs:", err);
+        error.value = err.response?.data?.message || "Failed to filter jobs";
       } finally {
         loading.value = false;
       }
-    };
+    }, 300); // 300ms debounce delay
 
-    const filteredJobs = computed(() => allJobs.value);
+    const fetchFilteredJobs = debouncedFetchFilteredJobs;
+
+    // Actual filtered jobs based on client-side filtering if needed
+    const filteredJobs = computed(() => {
+      return allJobs.value.filter(job => {
+        // If you want to add client-side filtering logic here
+        // For now, it just returns all jobs as the server does the filtering
+        return true;
+      });
+    });
 
     const toggleSidebar = () => {
       showSidebar.value = !showSidebar.value;
@@ -128,24 +154,27 @@ export default {
 
     const handleJobApply = async (jobId) => {
       try {
-        await axios.post('/api/applications', { job_id: jobId });
-        const jobIndex = allJobs.value.findIndex(job => job.id === jobId);
-        if (jobIndex !== -1) {
-          allJobs.value[jobIndex].applied = true;
-        }
+        await axios.post("/api/applications", { job_id: jobId });
+        // Update the applied status immutably
+        allJobs.value = allJobs.value.map(job => 
+          job.id === jobId ? { ...job, applied: true } : job
+        );
       } catch (err) {
-        console.error('Error applying to job:', err);
-        alert(err.response?.data?.message || 'Failed to apply for job');
+        console.error("Error applying to job:", err);
+        const errorMessage = err.response?.data?.message || "Failed to apply for job";
+        error.value = errorMessage;
+        // Consider using a more user-friendly notification system
+        alert(errorMessage);
       }
     };
 
     const clearFilters = () => {
       activeFilters.value = {
-        search: '',
-        work_type: '',
+        search: "",
+        work_type: "",
         min_salary: null,
         max_salary: null,
-        remote: false
+        remote: false,
       };
       showSidebar.value = false;
       fetchJobs();
@@ -164,14 +193,11 @@ export default {
       toggleSidebar,
       updateFilters,
       handleJobApply,
-      clearFilters
+      clearFilters,
     };
-  }
-}
+  },
+};
 </script>
-
-
-
 <style scoped>
 .candidate-home {
   position: relative;
@@ -274,7 +300,8 @@ export default {
   background: #2563eb;
 }
 
-.loading-state, .error-state {
+.loading-state,
+.error-state {
   text-align: center;
   padding: 2rem;
   font-size: 1.1rem;
@@ -303,7 +330,7 @@ export default {
     width: 100%;
     max-width: 320px;
   }
-  
+
   .filter-toggle-btn {
     bottom: 1rem;
     right: 1rem;

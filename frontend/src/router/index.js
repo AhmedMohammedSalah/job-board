@@ -26,6 +26,10 @@ const routes = [
     component: Home,
   },
   {
+    path: "/home",
+    redirect: "/",
+  },
+  {
     path: "/candidate",
     name: "candidate",
     component: CandidateLayout,
