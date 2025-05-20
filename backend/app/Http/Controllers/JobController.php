@@ -51,8 +51,8 @@ class JobController extends Controller
         $employer = $user->employer;
 
         // Calculate expiration date (default to 30 days if not specified)
-        $expiresAt = $request->deadline 
-            ? Carbon::parse($request->deadline) 
+        $expiresAt = $request->deadline
+            ? Carbon::parse($request->deadline)
             : Carbon::now()->addDays(30);
 
         $job = new Job([
@@ -84,7 +84,7 @@ class JobController extends Controller
     public function show($id)
     {
         $user = Auth::user();
-        
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->with(['applications.user', 'comments.user'])
@@ -124,7 +124,7 @@ class JobController extends Controller
         }
 
         $user = Auth::user();
-        
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -149,7 +149,7 @@ class JobController extends Controller
     public function pendingJobs()
     {
         // $this->authorize('admin', User::class);
-        
+
         $jobs = Job::where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -161,7 +161,7 @@ class JobController extends Controller
     public function approveJob($id)
     {
         // $this->authorize('admin', User::class);
-        
+
         // return $this->update(new Request([
         //     'status' => 'approved'
         // ]), $id);
@@ -173,18 +173,22 @@ class JobController extends Controller
 
     public function rejectJob(Request $request, $id)
     {
-        $this->authorize('admin', User::class);
-        
-        return $this->update(new Request([
-            'status' => 'rejected',
-            'rejection_reason' => $request->rejection_reason
-        ]), $id);
+        // $this->authorize('admin', User::class);
+
+        // return $this->update(new Request([
+        //     'status' => 'rejected',
+        //     'rejection_reason' => $request->rejection_reason
+        // ]), $id);
+        $job = Job::find($id);
+        $job-> status = 'expired';
+        $job-> save();
+        return response()-> json(['message' => 'Job rejected successfully',$job]);
     }
 
     public function destroy($id)
     {
         $user = Auth::user();
-        
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -203,7 +207,7 @@ class JobController extends Controller
     public function toggleActive($id)
     {
         $user = Auth::user();
-        
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -220,4 +224,154 @@ class JobController extends Controller
             'is_active' => $job->is_active,
         ]);
     }
+    ///filter
+//     public function filterJobs(Request $request)
+// {
+//     $query = Job::with('category') // Eager load the category relationship
+//               ->where('status', 'published');
+
+//     // Search filter
+//     if ($request->has('search')) {
+//         $searchTerm = $request->input('search');
+//         $query->where(function($q) use ($searchTerm) {
+//             $q->where('title', 'like', '%'.$searchTerm.'%')
+//               ->orWhere('description', 'like', '%'.$searchTerm.'%')
+//               ->orWhere('location', 'like', '%'.$searchTerm.'%');
+//         });
+//     }
+
+//     // Category filter - now using category_id
+//     if ($request->has('category') && $request->input('category') != 'All Category') {
+//         $query->whereHas('category', function($q) use ($request) {
+//             $q->where('name', $request->input('category'));
+//         });
+//     }
+
+//     // Job Type filter
+//     if ($request->has('work_type')) {
+//         $query->where('work_type', $request->input('work_type'));
+//     }
+
+//     // Salary range filter - adjusted for min_salary/max_salary columns
+//     if ($request->has('salary_min') || $request->has('salary_max')) {
+//         $min = $request->input('salary_min', 0);
+//         $max = $request->input('salary_max', PHP_INT_MAX);
+
+//         $query->where(function($q) use ($min, $max) {
+//             $q->where(function($q) use ($min, $max) {
+//                 $q->where('min_salary', '>=', $min)
+//                   ->where('min_salary', '<=', $max);
+//             })->orWhere(function($q) use ($min, $max) {
+//                 $q->where('max_salary', '>=', $min)
+//                   ->where('max_salary', '<=', $max);
+//             });
+//         });
+//     }
+
+//     // Remote job filter
+//     if ($request->has('remote_job')) {
+//         $query->where('work_type', 'remote');
+//     }
+
+//     $jobs = $query->orderBy('created_at', 'desc')->paginate(10);
+
+//     return response()->json([
+//         'jobs' => $jobs,
+//     ]);
+// }
+
+
+//filter 2
+// app/Http/Controllers/JobController.php
+// public function index()
+// {
+//     $jobs = Job::with(['employer', 'category'])
+//               ->where('status', 'active')
+//               ->latest()
+//               ->get();
+
+//     return response()->json($jobs);
+// }
+
+//
+
+public function getFilterOptions()
+    {
+        return response()->json([
+            'categories' => Category::select('id', 'name')->get(),
+            'job_types' => Job::select('work_type')
+                            ->distinct()
+                            ->whereNotNull('work_type')
+                            ->get()
+                            ->pluck('work_type'),
+            'salary_ranges' => [
+                'min' => Job::min('min_salary') ?? 0,
+                'max' => Job::max('max_salary') ?? 100000
+            ]
+        ]);
+    }
+
+    public function filterJobs(Request $request)
+    {
+        $query = Job::with(['category'])
+                  ->where('status', 'published');
+
+        // Search filter
+        if ($request->has('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('title', 'like', '%'.$request->search.'%')
+                  ->orWhere('description', 'like', '%'.$request->search.'%');});
+
+        }
+
+        // Category filter
+        if ($request->has('category')) {
+            $query->whereHas('category', function($q) use ($request) {
+                $q->where('name', $request->category);
+            });
+        }
+
+        // Job Type filter
+        if ($request->has('work_type')) {
+            $query->where('work_type', $request->work_type);
+        }
+
+        // Salary range filter
+        if ($request->has('min_salary') || $request->has('max_salary')) {
+    // Set default values and validate inputs
+    $min = $request->min_salary ?? 0;
+    $max = $request->max_salary ?? 99999;
+
+    // Ensure min is not greater than max (swap if necessary)
+    if ($min > $max) {
+        [$min, $max] = [$max, $min];
+    }
+
+    $query->where(function($q) use ($min, $max) {
+        // Case 1: Job's salary range is completely within the filter range
+        $q->where(function($q) use ($min, $max) {
+            $q->where('min_salary', '>=', $min)
+              ->where('max_salary', '<=', $max);
+        })
+        // Case 2: Job's salary range overlaps with the filter range at the lower end
+        ->orWhere(function($q) use ($min, $max) {
+            $q->where('min_salary', '<=', $min)
+              ->where('max_salary', '>=', $min);
+        })
+        // Case 3: Job's salary range overlaps with the filter range at the higher end
+        ->orWhere(function($q) use ($min, $max) {
+            $q->where('min_salary', '<=', $max)
+              ->where('max_salary', '>=', $max);
+        })
+        // Case 4: Job's salary range completely encompasses the filter range
+        ->orWhere(function($q) use ($min, $max) {
+            $q->where('min_salary', '<=', $min)
+              ->where('max_salary', '>=', $max);
+        });
+    });
+}
+
+        return $query->orderBy('created_at', 'desc')->paginate(10);
+    }
+
 }

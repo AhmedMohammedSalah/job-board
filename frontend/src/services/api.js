@@ -75,4 +75,10 @@ export default {
       return api.put(`candidate/${id}`, data);
     },
   },
+  admin:{
+    getAlljobs(){
+      return api.get("/admin");
+      },
+  }
 };
+// const alljobs = await api.admin.getAlljobs()

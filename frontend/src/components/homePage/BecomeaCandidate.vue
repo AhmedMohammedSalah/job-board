@@ -9,8 +9,8 @@
         <div class="cards-container">
           <div class="card">
             <div class="card-image">
-              <!-- Replace with your actual image -->
-              <!-- <img src="@/assets/Pasted image.png" alt="Candidate" class="card-img"> -->
+            
+              <img src="/Pasted image.png" alt="Candidate" class="card-img">
             </div>
             <div class="card-content">
               <h2>Register Now</h2>
@@ -23,7 +23,7 @@
           <div class="card">
             <div class="card-image">
               <!-- Replace with your actual image -->
-              <!-- <img src="@/assets/Pasted image (2).png" alt="Employer" class="card-img"> -->
+              <img src="/Pasted image (2).png" alt="Employer" class="card-img">
             </div>
             <div class="card-content">
               <h2>Register Now</h2>

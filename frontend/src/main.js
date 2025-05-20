@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import App from "./App.vue";
 import router from "./router/index.js";
+import axios from './axios';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -33,5 +34,7 @@ app.component("font-awesome-icon", FontAwesomeIcon);
 
 app.use(createPinia());
 app.use(router);
+
+app.config.globalProperties.$http = axios;
 
 app.mount("#app");
