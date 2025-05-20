@@ -130,7 +130,7 @@ const handleLogin = async () => {
     if (response.data.success) {
       // Store token and user data
       localStorage.setItem('auth_token', response.data.token);
-      localStorage.setItem('candidate_id', response.data.user.id);
+      // localStorage.setItem('candidate_id', response.data.user.id);
       if (rememberMe.value) {
         localStorage.setItem('user', JSON.stringify(response.data.user))
       }

@@ -101,7 +101,7 @@ const fetchCurrentUser = async () => {
       console.error('Error fetching user:', error.response ? error.response.data : error.message)
       isLoggedIn.value = false
       userName.value = ''
-      localStorage.removeItem('auth_token')
+      // localStorage.removeItem('auth_token')
       token.value = ''
     }
   } else {

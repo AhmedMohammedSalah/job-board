@@ -49,6 +49,11 @@ const routes = [
         name: "candidate-settings",
         component: candidateSettings,
       },
+      {
+        path: "/candidateHomePage",
+        name: "candidateHomePage",
+        component: candidateHomePage,
+      }
     ],
   },
   {
@@ -75,24 +80,18 @@ const routes = [
     path: "/reset-password",
     name: "ResetPassword",
     component: ResetPassword,
-
   },
-   ,{
-    path: "/candidateHomePage",
-    name: "candidateHomePage",
-    component: candidateHomePage,
-
+  // admin route 
+  {
+    path: "/inventory",
+    name: "inventory",
+    component: inventory,
   },
-    {
-    path: '/inventory',
-    name: 'inventory',
-    component: inventory
-  },
-    {
-    path: '/pending-jobs',
-    name: 'PendingJobs',
+  {
+    path: "/pending-jobs",
+    name: "PendingJobs",
     component: PendingJobsView,
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
 
   {

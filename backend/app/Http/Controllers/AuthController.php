@@ -23,7 +23,7 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             $errors = $validator->errors();
-            
+
             if ($errors->has('email') && User::where('email', $request->email)->exists()) {
                 return response()->json([
                     'success' => false,
@@ -51,7 +51,7 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $user->createToken('auth_token')->plainTextToken
         ], 201);
-        
+
     }
 
 
@@ -92,7 +92,7 @@ class AuthController extends Controller
             'token' => $user->createToken('auth_token')->plainTextToken
         ]);
     }
-   
+
 
 
     public function logout(Request $request)
@@ -135,30 +135,48 @@ public function sendResetEmail(Request $request)
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-      
+
         return response()->json(['message' => 'Password reset  email sent'], 200);
     }
-
+    public function  get_current_user(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+        return response()->json($user, 200);
+    }
 
 
     public function reset(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|confirmed',
-            'token' => 'required'
+            'password' => 'required|confirmed'
+            // 'token' => 'required'
         ]);
         // Logic to reset password
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
+        $user->password = Hash::make($request->password);
+        $user->save();
         // Verify the token and reset the password
         // This is a placeholder for actual password reset logic
         return response()->json(['message' => 'Password reset successfully'], 200);
     }
-    
+      public function checkemail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
 
+        $user = User::where('email', $request->email)->first();
+        if ($user) {
+            return response()->json(['message' => 'Now You Can Change Password '], 200);
+        }
 
-   
+        return response()->json(['error' => 'Email does not exist'], 404);
+    }
 }
+
+

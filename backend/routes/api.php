@@ -81,3 +81,9 @@ Route::prefix('jobs')->group(function () {
 Route::prefix('applications')->middleware('auth:sanctum')->group(function () {
     Route::patch('/{applicationId}/status', [ApplicationController::class, 'updateApplicationStatus']);
 });
+// get_current_user
+// http://localhost:8000/api/auth/get_current_user
+Route::get('/auth/get_current_user', [AuthController::class, 'get_current_user'])->middleware('auth:sanctum');
+// checkemail
+// http://localhost:8000/api/auth/checkemail
+Route::post('/auth/checkemail', [AuthController::class, 'checkemail']);
