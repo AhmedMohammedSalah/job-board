@@ -1,6 +1,26 @@
 <template>
   <div class="app-layout">
-    <Sidebar />
+    <div class="sidebar">
+      <div class="logo">
+        <i class="fas fa-boxes"></i> 
+        <span>Inventory System</span>
+      </div>
+      <nav>
+        <router-link to="/pending-jobs" class="nav-item">
+          <i class="fas fa-clock"></i>
+          <span>Pending Jobs</span>
+        </router-link>
+        <router-link to="/job2" class="nav-item">
+          <i class="fas fa-clipboard-list"></i>
+          <span>Active Jobs</span>
+        </router-link>
+        <a href="#" class="nav-item logout" @click.prevent="logout">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </div>
+
     <div class="main-content">
       <div class="page-header">
         <h1><i class="fas fa-clock"></i> Pending Jobs</h1>
@@ -100,13 +120,8 @@
 </template>
 
 <script>
-import Sidebar from '../components/Sidebar.vue'
-
 export default {
   name: 'PendingJobsView',
-  components: {
-    Sidebar
-  },
   data() {
     return {
       pendingJobs: [],
@@ -136,7 +151,6 @@ export default {
         
         const data = await response.json()
         this.pendingJobs = data.data
-        // console.log(data.data);
       } catch (err) {
         this.error = err.message || 'Failed to fetch pending jobs'
         console.error('Error fetching pending jobs:', err)
@@ -163,7 +177,7 @@ export default {
             'Content-Type': 'application/json'
           }
         })
-        // console.log(jobId);
+        
         if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.message || 'Failed to approve job')
@@ -189,41 +203,120 @@ export default {
         
         if (!response.ok) {
           const errorData = await response.json()
-          console.log(response);
-          throw new Error( errorData.message ||'Failed to reject job')
+          throw new Error(errorData.message || 'Failed to reject job')
         }
         
         this.$toast.success('Job rejected successfully')
         this.fetchPendingJobs()
       } catch (err) {
-        // this.$toast.error( 'Failed to reject job')
-        // console.error('Error rejecting job:')
+        this.$toast.error('Failed to reject job')
+        console.error('Error rejecting job:')
       }
+    },
+    logout() {
+      console.log('Logging out...')
     }
   }
 }
 </script>
 
 <style scoped>
+/* ====================
+   LAYOUT STRUCTURE
+   ==================== */
 .app-layout {
   display: flex;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* ====================
+   SIDEBAR (ENHANCED)
+   ==================== */
+.sidebar {
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(135deg, #1976d2, #0d47a1);
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 25px 0;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  transition: width 0.3s ease;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  padding: 0 25px 25px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 25px;
+  color: white;
+}
+
+.logo i {
+  margin-right: 15px;
+  font-size: 1.8rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 25px;
+  color: #ecf0f1;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-left: 4px solid transparent;
+  margin: 8px 15px;
+  border-radius: 6px;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-left: 4px solid #fff;
+}
+
+.nav-item i {
+  width: 24px;
+  margin-right: 15px;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.logout {
+  margin-top: 35px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 18px;
+  color: #ff6b6b;
+}
+
+.logout:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-left: 4px solid #ff6b6b;
+}
+
+/* ====================
+   MAIN CONTENT AREA
+   ==================== */
 .main-content {
   flex: 1;
-  margin-left: 200px;
-  padding: 30px;
+  margin-left: 280px;
+  padding: 40px;
   background-color: #f8fafc;
   min-height: 100vh;
+  transition: margin-left 0.3s ease;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   padding-bottom: 15px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -232,29 +325,31 @@ export default {
   color: #2d3748;
   font-size: 1.8rem;
   margin: 0;
+  font-weight: 600;
 }
 
 .page-header h1 i {
-  margin-right: 10px;
+  margin-right: 12px;
   color: #4299e1;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .refresh-btn {
-  padding: 8px 16px;
+  padding: 10px 18px;
   background-color: #4299e1;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
   transition: background-color 0.2s;
 }
 
@@ -263,14 +358,19 @@ export default {
 }
 
 .refresh-btn i {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
+/* ====================
+   CONTENT CARD
+   ==================== */
 .content-card {
   background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 35px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .loading-spinner, .error-message, .no-jobs {
@@ -280,133 +380,147 @@ export default {
 }
 
 .loading-spinner i {
-  margin-right: 10px;
+  margin-right: 12px;
   color: #4299e1;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
 .error-message {
   color: #e53e3e;
+  font-weight: 500;
 }
 
 .error-message i {
-  margin-right: 10px;
+  margin-right: 12px;
+  font-size: 1.2rem;
 }
 
 .no-jobs {
   color: #38a169;
+  font-weight: 500;
 }
 
 .no-jobs i {
-  margin-right: 10px;
+  margin-right: 12px;
+  font-size: 1.2rem;
 }
 
+/* ====================
+   JOB CARDS
+   ==================== */
 .jobs-list {
   display: grid;
-  gap: 25px;
+  gap: 30px;
 }
 
 .job-card {
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 25px;
+  border-radius: 10px;
+  padding: 30px;
   background: white;
   transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .job-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
 }
 
 .job-header {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 1px solid #edf2f7;
 }
 
 .job-header h3 {
   color: #2d3748;
-  font-size: 1.4rem;
-  margin: 0 0 10px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
 }
 
 .job-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
-  font-size: 0.85rem;
+  gap: 20px;
+  font-size: 0.9rem;
   color: #4a5568;
 }
 
 .job-meta i {
-  margin-right: 5px;
+  margin-right: 8px;
   color: #718096;
 }
 
 .job-details {
-  margin-top: 20px;
+  margin-top: 25px;
 }
 
 .job-section {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .job-section h4 {
   color: #2d3748;
-  font-size: 1.1rem;
-  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 10px 0;
 }
 
 .job-section p {
   color: #4a5568;
-  line-height: 1.6;
+  line-height: 1.7;
   margin: 0;
   white-space: pre-line;
 }
 
 .job-meta-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 15px;
-  margin-top: 25px;
-  padding-top: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+  padding-top: 20px;
   border-top: 1px solid #edf2f7;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: 10px;
+  font-size: 0.95rem;
   color: #4a5568;
 }
 
 .meta-item i {
   color: #718096;
-  width: 20px;
+  width: 22px;
   text-align: center;
+  font-size: 1rem;
 }
 
+/* ====================
+   JOB ACTIONS
+   ==================== */
 .job-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 25px;
-  padding-top: 15px;
+  gap: 15px;
+  margin-top: 30px;
+  padding-top: 20px;
   border-top: 1px solid #edf2f7;
 }
 
 .approve-btn, .reject-btn {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
@@ -428,20 +542,64 @@ export default {
   background-color: #c53030;
 }
 
+/* ====================
+   RESPONSIVE DESIGN
+   ==================== */
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 260px;
+  }
+  .main-content {
+    margin-left: 260px;
+    padding: 35px;
+  }
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: 240px;
+  }
+  .main-content {
+    margin-left: 240px;
+    padding: 30px;
+  }
+  .content-card {
+    padding: 30px;
+  }
+}
+
 @media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
   .main-content {
     margin-left: 0;
-    padding: 20px;
+    padding: 25px;
   }
-  
   .job-meta-grid {
     grid-template-columns: 1fr;
   }
-  
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .main-content {
+    padding: 20px;
+  }
+  .content-card {
+    padding: 25px 20px;
+  }
+  .job-card {
+    padding: 25px 20px;
+  }
+  .job-actions {
+    flex-direction: column;
   }
 }
 </style>

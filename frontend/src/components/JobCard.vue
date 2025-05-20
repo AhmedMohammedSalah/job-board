@@ -45,7 +45,7 @@
             :disabled="isApplied"
             :class="{ 'applied': isApplied }"
           >
-            {{ isApplied ? 'Applied' : 'Apply Now' }}
+          show details 
           </button>
         </div>
       </div>
@@ -82,7 +82,9 @@ export default {
   data() {
     return {
       isSaved: false,
-      isApplied: false
+      isApplied: false,
+      
+      
     }
   },
   computed: {
@@ -121,10 +123,8 @@ export default {
       this.$emit(this.isSaved ? 'save' : 'unsave', this.job.id);
     },
     handleApply() {
-      if (!this.isApplied) {
-        this.isApplied = true;
-        this.$emit('apply', this.job.id);
-      }
+      // router using vue-router
+      this.$router.push({ name: "JobDetails", params: { id: this.job.id } });
     }
   }
 }
