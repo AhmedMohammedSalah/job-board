@@ -68,18 +68,19 @@ Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
         Route::get('/jobs/{id}', [JobPostController::class, 'show']);
         Route::put('/jobs/{id}', [JobPostController::class, 'update']);
         Route::delete('/jobs/{id}', [JobPostController::class, 'destroy']);
-    
+
         // Applications for a specific job
         Route::get('/jobs/{id}/applications', [JobPostController::class, 'applications']);
-    
+
         // All applications across all employer jobs
         Route::get('/applications', [JobPostController::class, 'employerApplications']);
-    
+
         // Accept/reject/update a specific application
         Route::post('/jobs/{jobId}/applications/{applicationId}/accept', [JobPostController::class, 'acceptApplication']);
         Route::post('/jobs/{jobId}/applications/{applicationId}/reject', [JobPostController::class, 'rejectApplication']);
         Route::put('/jobs/{jobId}/applications/{applicationId}/status', [JobPostController::class, 'updateApplicationStatus']);
  
+
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);
     Route::post('/', [JobController::class, 'store']);

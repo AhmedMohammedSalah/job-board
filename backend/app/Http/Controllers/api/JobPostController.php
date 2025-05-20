@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 
+// use Illuminate\Support\Facades\Auth;
+
+
 class JobController extends Controller
 {
     /**
@@ -25,14 +28,14 @@ class JobController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $jobs = Job::where('employer_id', $user->employer->id)
             ->withCount('applications')
             ->orderBy('created_at', 'desc')
@@ -57,7 +60,7 @@ class JobController extends Controller
                     'benefits' => $job->benefits,
                 ];
             });
-            
+
         return response()->json([
             'status' => 'success',
             'data' => $jobs,
@@ -69,6 +72,24 @@ class JobController extends Controller
      * Store a newly created job
      */
     // Duplicate index() method removed to fix redeclaration error.
+
+    // /**
+    //  * Store a newly created job
+    //  */
+    // public function index()
+    // {
+    //     $user = Auth::user();
+    //     $employer = $user->employer;
+
+    //     $jobs = $employer->jobs()
+    //         ->withCount('applications')
+    //         ->orderBy('created_at', 'desc')
+    //         ->get();
+
+    //     return response()->json([
+    //         'jobs' => $jobs,
+    //     ]);
+    // }
 
     public function store(Request $request)
     {
@@ -86,6 +107,8 @@ class JobController extends Controller
             'responsibilities' => 'nullable|string',
             'requirements' => 'nullable|array',
             'location' => 'required|string|max:255',
+            'requirements' => 'nullable|string',
+            'location' => 'required|string',
             'salary' => 'nullable|numeric',
             'salary_min' => 'nullable|numeric',
             'salary_max' => 'nullable|numeric',
@@ -101,9 +124,22 @@ class JobController extends Controller
             'deadline' => 'nullable|date',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+
+        if (!$user->employer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only employers can post jobs'
+            ], 403);
+        }
+
         // Calculate expiration date
-        $expiresAt = $request->closing_date 
-            ? Carbon::parse($request->closing_date) 
+        $expiresAt = $request->closing_date
+            ? Carbon::parse($request->closing_date)
             : Carbon::now()->addDays(30);
 
         $job = new Job($validator->validated());
@@ -123,10 +159,17 @@ class JobController extends Controller
     /**
      * Display the specified job
      */
-    public function show($id)
+    public function show(string $id)
     {
         $user = Auth::user();
-        
+
+        if (!$user->employer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Not an employer account.'
+            ], 403);
+        }
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->with(['applications.user', 'comments.user'])
@@ -200,15 +243,14 @@ class JobController extends Controller
     // }
     public function update(Request $request, $id)
     {
-        $user = Auth::user();
-        
-        // Common validation rules
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'responsibilities' => 'nullable|string',
             'requirements' => 'sometimes|array',
             'location' => 'sometimes|string|max:255',
+            'requirements' => 'nullable|string',
+            'location' => 'sometimes|string',
             'salary' => 'nullable|numeric',
             'salary_min' => 'nullable|numeric',
             'salary_max' => 'nullable|numeric',
@@ -226,6 +268,24 @@ class JobController extends Controller
             'deadline' => 'nullable|date',
             'rejection_reason' => 'required_if:status,rejected|nullable|string|max:500'
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+
+        if (!$user->employer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Not an employer account.'
+            ], 403);
+        }
+
+        $job = Job::where('id', $id)
+            ->where('employer_id', $user->employer->id)
+            ->first();
+
         if (!$job) {
             return response()->json([
                 'status' => 'error',
@@ -253,14 +313,14 @@ class JobController extends Controller
     public function destroy(string $id)
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -279,14 +339,14 @@ class JobController extends Controller
             'message' => 'Job deleted successfully'
         ]);
     }
-    
+
     /**
      * Get all applications for a specific job
      */
     public function applications(string $id)
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
@@ -379,22 +439,20 @@ class JobController extends Controller
         ]), $id);
     }
 
-    // Duplicate destroy() method removed to fix redeclaration error.
-    
     /**
      * Get all applications for the employer
      */
     public function allApplications()
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $applications = Application::with(['job', 'user'])
             ->whereHas('job', function ($query) use ($user) {
                 $query->where('employer_id', $user->employer->id);
@@ -412,56 +470,56 @@ class JobController extends Controller
                     'applied_date' => $application->created_at->format('M d, Y'),
                 ];
             });
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $applications,
             'message' => 'All applications retrieved successfully'
         ]);
     }
-    
+
     /**
      * Accept a job application
      */
     public function acceptApplication(string $jobId, string $applicationId)
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         return DB::transaction(function () use ($jobId, $applicationId, $user) {
             $job = Job::where('id', $jobId)
                 ->where('employer_id', $user->employer->id)
                 ->first();
-                
+
             if (!$job) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Job not found or not owned by employer'
                 ], 404);
             }
-            
+
             $application = Application::where('id', $applicationId)
                 ->where('job_id', $jobId)
                 ->with('user')
                 ->first();
-            
+
             if (!$application) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Application not found'
                 ], 404);
             }
-            
+
             $application->status = 'hired';
             $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application accepted.";
             $application->save();
-            
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -477,48 +535,48 @@ class JobController extends Controller
             ]);
         });
     }
-    
+
     /**
      * Reject a job application
      */
     public function rejectApplication(string $jobId, string $applicationId)
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $job = Job::where('id', $jobId)
             ->where('employer_id', $user->employer->id)
             ->first();
-            
+
         if (!$job) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Job not found or not owned by employer'
             ], 404);
         }
-        
+
         $application = Application::where('id', $applicationId)
             ->where('job_id', $jobId)
             ->with('user')
             ->first();
-        
+
         if (!$application) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Application not found'
             ], 404);
         }
-        
+
         $application->status = 'rejected';
         $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application rejected.";
         $application->save();
-        
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -532,7 +590,7 @@ class JobController extends Controller
             'message' => 'Application rejected successfully'
         ]);
     }
-    
+
     /**
      * Update application status
      */
@@ -546,44 +604,44 @@ class JobController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-        
+
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $job = Job::where('id', $jobId)
             ->where('employer_id', $user->employer->id)
             ->first();
-            
+
         if (!$job) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Job not found or not owned by employer'
             ], 404);
         }
-        
+
         $application = Application::where('id', $applicationId)
             ->where('job_id', $jobId)
             ->first();
-        
+
         if (!$application) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Application not found'
             ], 404);
         }
-        
+
         $application->status = $request->status;
-        
+
         if ($request->has('employer_notes')) {
             $application->employer_notes = $request->employer_notes;
         }
-        
+
         $application->save();
 
         return response()->json([
@@ -597,15 +655,24 @@ class JobController extends Controller
             'message' => 'Application status updated successfully'
         ]);
     }
-    
+
     /**
      * Toggle job active status
      */
 
-    public function toggleActive($id)
+    
+        
+    public function toggleActive(string $id)
     {
         $user = Auth::user();
-        
+
+        if (!$user->employer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Not an employer account.'
+            ], 403);
+        }
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -631,21 +698,21 @@ class JobController extends Controller
             'message' => 'Job status updated'
         ]);
     }
-    
+
     /**
      * Mark job as expired
      */
     public function markAsExpired(string $id)
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $job = Job::where('id', $id)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -664,6 +731,7 @@ class JobController extends Controller
             'status' => 'success',
             'message' => 'Job marked as expired',
             'is_active' => $job->is_active,
+            'message' => 'Job marked as expired'
         ]);
     }
 }
