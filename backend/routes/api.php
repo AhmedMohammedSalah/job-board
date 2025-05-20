@@ -6,8 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 // use App\Http\Controllers\Api\EmployerController;
-use App\Http\Controllers\Api\JobCommentController;
-use App\Http\Controllers\Api\JobPostController;
+use App\Http\Controllers\api\JobCommentController;
+use App\Http\Controllers\api\JobPostController;
 use App\Http\Controllers\JobController;
 // use ApplicationController
 use App\Http\Controllers\api\CandidateController;
