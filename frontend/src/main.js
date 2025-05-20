@@ -10,10 +10,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import { createPinia } from "pinia";
 // Import specific icons you want to use
-import { 
-  faBuilding, 
-  faMapMarkerAlt, 
-  faMoneyBillWave, 
+import {
+  faBuilding,
+  faMapMarkerAlt,
+  faMoneyBillWave,
   faClock,
   faArrowRight,
   // Add other icons you need
@@ -21,9 +21,9 @@ import {
 
 // Add icons to the library
 library.add(
-  faBuilding, 
-  faMapMarkerAlt, 
-  faMoneyBillWave, 
+  faBuilding,
+  faMapMarkerAlt,
+  faMoneyBillWave,
   faClock,
   faArrowRight
   // Add other icons here

@@ -40,7 +40,7 @@ const routes = [
       {
         path: "settings",
         name: "candidate-settings",
-        component:candidateSettings,
+        component: candidateSettings,
       },
     ],
   },
