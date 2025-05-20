@@ -22,11 +22,11 @@ class UpdateApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'sometimes|exists:users,id',
             'job_id' => 'sometimes|exists:jobs,id',
-            'cv' => 'sometimes|string|max:255',
+            'candidate_id' => 'sometimes|exists:candidates,id',
+            'resume_path' => 'sometimes|file|mimes:pdf,doc,docx|max:2048',
             'cover_letter' => 'nullable|string|max:1000',
-            'status' => 'nullable|in:pending,accepted,rejected',
+            'status' => 'nullable|in:pending,reviewed,accepted,rejected',
         ];
     }
 }
