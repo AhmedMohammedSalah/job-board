@@ -7,12 +7,13 @@ import {
   faBriefcase,
   faHeart,
   faBell,
-  faSignOutAlt
+  faSignOutAlt,
+  faUser
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 // Add icons to library
-library.add(faThLarge, faBriefcase, faHeart, faBell, faSignOutAlt);
+library.add(faThLarge, faBriefcase, faHeart, faBell, faSignOutAlt,faUser);
 
 const router = useRouter();
 const activeItem = ref("/candidate"); // Default active item
@@ -24,21 +25,21 @@ const menuItems = [
     title: "Recently Applied Jobs", 
     route: "/candidate/recentlyApplied" 
   },
+  // { 
+  //   icon: faHeart, 
+  //   title: "Favorite Jobs", 
+  //   route: "/candidate/saved-jobs" 
+  // },
   { 
-    icon: faHeart, 
-    title: "Favorite Jobs", 
-    route: "/candidate/saved-jobs" 
-  },
-  { 
-    icon: faBell, 
-    title: "Job Alerts", 
-    route: "/candidate/alerts" 
-  },
-  { 
-    icon: faSignOutAlt, 
-    title: "Logout", 
-    route: "logout" 
+    icon: faUser, 
+    title: "Settings", 
+    route: "/candidate/settings" 
   }
+  // { 
+  //   icon: faSignOutAlt, 
+  //   title: "Logout", 
+  //   route: "logout" 
+  // }
 ];
 
 const navigateTo = (route) => {
