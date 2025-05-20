@@ -14,10 +14,10 @@ import JobDetails from "../pages/Singel_Job-Apply_Job/JobDetails.vue";
 import ApplyJob from "../pages/Singel_Job-Apply_Job/ApplyJob.vue";
 import ThankYouPage from "../pages/Singel_Job-Apply_Job/ThankYouPage.vue";
 
-import CandidateLayout from "../layouts/CandidateLayout.vue";
-import CandidateOverview from "../views/candidate/CandidateOverview.vue";
-import candidateSettings from "../views/candidate/CandidateSettings.vue";
-import RecentlyApplied from "../components/candidate/RecentlyApplied.vue";
+// import CandidateLayout from "../layouts/CandidateLayout.vue";
+// import CandidateOverview from "../views/candidate/CandidateOverview.vue";
+// import candidateSettings from "../views/candidate/CandidateSettings.vue";
+// import RecentlyApplied from "../components/candidate/RecentlyApplied.vue";
 
 const routes = [
   {
@@ -29,33 +29,33 @@ const routes = [
     path: "/home",
     redirect: "/",
   },
-  {
-    path: "/candidate",
-    name: "candidate",
-    component: CandidateLayout,
-    children: [
-      {
-        path: "",
-        name: "candidate-overview",
-        component: CandidateOverview,
-      },
-      {
-        path: "recentlyApplied",
-        name: "recently-applied",
-        component: RecentlyApplied,
-      },
-      {
-        path: "settings",
-        name: "candidate-settings",
-        component: candidateSettings,
-      },
-      {
-        path: "/candidateHomePage",
-        name: "candidateHomePage",
-        component: candidateHomePage,
-      }
-    ],
-  },
+  // {
+  //   path: "/candidate",
+  //   name: "candidate",
+  //   component: CandidateLayout,
+  //   children: [
+  //     {
+  //       path: "",
+  //       name: "candidate-overview",
+  //       component: CandidateOverview,
+  //     },
+  //     {
+  //       path: "recentlyApplied",
+  //       name: "recently-applied",
+  //       component: RecentlyApplied,
+  //     },
+  //     {
+  //       path: "settings",
+  //       name: "candidate-settings",
+  //       component: candidateSettings,
+  //     },
+  //     {
+  //       path: "/candidateHomePage",
+  //       name: "candidateHomePage",
+  //       component: candidateHomePage,
+  //     }
+  //   ],
+  // },
   {
     path: "/register",
     name: "Register",

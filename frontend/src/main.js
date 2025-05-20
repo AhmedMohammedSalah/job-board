@@ -17,8 +17,17 @@ import {
   faMoneyBillWave,
   faClock,
   faArrowRight,
+  faCalendarAlt,
+  faBriefcase,
+  faChartLine,
+  faEnvelope
   // Add other icons you need
 } from '@fortawesome/free-solid-svg-icons'
+import {
+  faFacebookF,
+  faTwitter,
+  faLinkedinIn
+} from '@fortawesome/free-brands-svg-icons'
 
 // Add icons to the library
 library.add(
@@ -26,9 +35,17 @@ library.add(
   faMapMarkerAlt,
   faMoneyBillWave,
   faClock,
-  faArrowRight
+  faArrowRight,
+  faCalendarAlt,
+  faBriefcase,
+  faChartLine,
+  faFacebookF,
+  faTwitter,
+  faLinkedinIn,
+  faEnvelope
   // Add other icons here
 )
+
 const app = createApp(App);
 app.component("font-awesome-icon", FontAwesomeIcon);
 
