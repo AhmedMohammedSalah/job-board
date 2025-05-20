@@ -83,6 +83,8 @@ const router = useRouter()
 const email = ref(route.query.email || '')
 const password = ref('')
 const confirmPassword = ref('')
+const token = ref('')
+
 const validated = ref(false)
 const loading = ref(false)
 
@@ -96,13 +98,16 @@ const showAlert = (type, message) => {
   alert.value = { show: true, type, message }
   setTimeout(() => { alert.value.show = false }, 5000)
 }
+onMounted(() => {
+  token.value = route.query.token || ''
+  email.value = route.query.email || ''
+})
 
 const handleReset = async () => {
   validated.value = true
   loading.value = true
   alert.value.show = false
 
-  // Validate inputs
   if (!password.value || password.value.length < 6) {
     showAlert('danger', 'Password must be at least 6 characters')
     loading.value = false
@@ -116,37 +121,27 @@ const handleReset = async () => {
   }
 
   try {
-    // Find user by exact email match
-    const response = await axios.get(`http://localhost:3000/users?email=${encodeURIComponent(email.value)}`)
-    
-    if (response.data.length === 0) {
-      throw new Error('User account not found')
-    }
 
-    const user = response.data[0]
-    
-    // Update password using PUT instead of PATCH for full replacement
-    await axios.put(`http://localhost:3000/users/${user.id}`, {
-      ...user, // Keep all existing user data
-      password: password.value // Only update the password
+    await axios.post('http://localhost:8000/api/auth/password/reset', {
+      email: email.value,
+      password: password.value,
+      password_confirmation: confirmPassword.value,
+
     })
 
     showAlert('success', 'Password updated successfully! Redirecting to login...')
     setTimeout(() => router.push('/login'), 2000)
 
   } catch (error) {
-    showAlert('danger', error.message || 'Failed to reset password. Please try again.')
+    const msg = error.response?.data?.message || error.message || 'Failed to reset password. Please try again.'
+    showAlert('danger', msg)
     console.error('Reset password error:', error)
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  if (!email.value) {
-    showAlert('danger', 'No email provided. Please request a new password reset link.')
-  }
-})
+
 </script>
 
 <style scoped>

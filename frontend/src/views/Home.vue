@@ -3,6 +3,7 @@
       <AppHeader />
       <Navbar />
       <section1 />
+      <MostPopularVacancies />
       <BecomeaCandidate />
 
       <Popular />
@@ -17,6 +18,7 @@
   import AppFooter from '../components/homePage/AppFooter.vue';
   import section1 from '../components/homePage/section1.vue';
   import BecomeaCandidate from '../components/homePage/BecomeaCandidate.vue';
+  import MostPopularVacancies from '../components/homePage/MostPopularVacancies.vue';
 
  
 
@@ -27,6 +29,7 @@
       Navbar,
       AppHeader,
       section1,
+      MostPopularVacancies,
       Popular,
       BecomeaCandidate,
       AppFooter
