@@ -1,7 +1,6 @@
 <template>
   <div class="container-fluid login-container">
     <div class="row g-0">
-      <!-- Forgot Password Form Section -->
       <div class="col-lg-6 login-form-section">
         <div class="login-form-wrapper">
           <div class="header">
@@ -44,7 +43,7 @@
   </div>
 </template>
 
-<script setup>
+<!-- <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
@@ -109,8 +108,64 @@ if (!matchedUser) {
     loading.value = false
   }
 }
-</script>
+</script> -->
 
+
+<script setup>
+import { ref } from 'vue'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
+
+const email = ref('')
+const validated = ref(false)
+const loading = ref(false)
+const router = useRouter()
+
+const alert = ref({
+  show: false,
+  type: 'danger',
+  message: ''
+})
+
+const showAlert = (type, message) => {
+  alert.value = { show: true, type, message }
+  setTimeout(() => { alert.value.show = false }, 5000)
+}
+
+const handleReset = async () => {
+  validated.value = true
+  loading.value = true
+
+  const form = document.querySelector('.needs-validation')
+  if (!form.checkValidity()) {
+    loading.value = false
+    return
+  }
+
+  try {
+    const response = await axios.post('http://localhost:8000/api/auth/checkemail', {
+      email: email.value
+    })
+
+    showAlert('success', response.data.message || 'Password reset email sent')
+    setTimeout(() => {
+      router.push(`/reset-password?email=${encodeURIComponent(email.value)}`)
+    }, 1500)
+
+  } catch (error) {
+    console.error(error.response || error) // 👈 أطبع الخطأ هنا
+
+    if (error.response && error.response.status === 404) {
+      showAlert('danger', 'Email not found in our system')
+    } else {
+      showAlert('danger', error.response?.data?.error || 'Failed to process your request')
+    }
+  } finally {
+    loading.value = false
+  }
+
+}
+</script>
 <style scoped>
 @import './style.css';
 </style>

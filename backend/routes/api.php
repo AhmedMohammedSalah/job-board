@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\api\SingleJobController;
 use App\Http\Controllers\ApplicationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -14,15 +15,23 @@ use App\Http\Controllers\api\CandidateController;
 use App\Http\Controllers\api\SkillController;
 // use CandidateSkillController
 use App\Http\Controllers\api\CandidateSkillController;
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/applications', [ApplicationController::class, 'index']);
-Route::post('/applications', [ApplicationController::class, 'store']);
-Route::get('/applications/{id}', [ApplicationController::class, 'show']);
-Route::put('/applications/{id}', [ApplicationController::class, 'update']);
-Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
+//Marwa Nasser
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/applications', [ApplicationController::class, 'index']);
+    Route::post('/applications', [ApplicationController::class, 'store']);
+    Route::get('/applications/{id}', [ApplicationController::class, 'show']);
+    Route::put('/applications/{id}', [ApplicationController::class, 'update']);
+    Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
+    Route::get('/recently-applied', [ApplicationController::class, 'recentlyApplied']);
+    Route::get('/checkApplications', [ApplicationController::class, 'checkIfExists']);
+});
+
+Route::middleware('auth:sanctum')->get('/singleJob/{id}', [SingleJobController::class, 'show']);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -31,9 +40,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
     Route::post('/auth/password/reset', [AuthController::class, 'reset']);
     // [AMS] Applications Route
-    Route::get('/recently-applied',[ApplicationController::class,'recentlyApplied']);
+    Route::get('/recently-applied', [ApplicationController::class, 'recentlyApplied']);
     // [AMS] Candidate ApiResource Route
-    Route::ApiResource ('candidate',CandidateController::class);
+    Route::ApiResource('candidate', CandidateController::class);
     Route::put('/auth/user', [AuthController::class, 'update']);
     // [AMS] Skills ApiRoute
     Route::ApiResource('skills', SkillController::class);
@@ -50,6 +59,9 @@ Route::post('/auth/password/reset', [AuthController::class, 'reset']);
     Route::post('/jobs/{id}/approve', [JobController::class, 'approveJob'])->name('jobs.approve'); // Approve a job
     Route::post('/jobs/{id}/reject', [JobController::class, 'rejectJob'])->name('jobs.reject'); // Reject a job
 
+//filter
+Route::get('/jobs/filter', [JobController::class, 'filterJobs']);
+Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
 
         Route::get('/jobs', [JobPostController::class, 'index']);
         Route::post('/jobs', [JobPostController::class, 'store']);
@@ -68,3 +80,26 @@ Route::post('/auth/password/reset', [AuthController::class, 'reset']);
         Route::post('/jobs/{jobId}/applications/{applicationId}/reject', [JobPostController::class, 'rejectApplication']);
         Route::put('/jobs/{jobId}/applications/{applicationId}/status', [JobPostController::class, 'updateApplicationStatus']);
  
+Route::prefix('jobs')->group(function () {
+    Route::get('/', [JobController::class, 'index']);
+    Route::post('/', [JobController::class, 'store']);
+    Route::get('/{id}', [JobController::class, 'show']);
+    Route::put('/{id}', [JobController::class, 'update']);
+    Route::delete('/{id}', [JobController::class, 'destroy']);
+    Route::patch('/{id}/toggle-active', [JobController::class, 'toggleActive']);
+    // Route::get('/{jobId}/comments', [JobCommentController::class, 'index']);
+    // Route::post('/{jobId}/comments', [JobCommentController::class, 'store']);
+    // Route::put('/{jobId}/comments/{commentId}', [JobCommentController::class, 'update']);
+    // Route::delete('/{jobId}/comments/{commentId}', [JobCommentController::class, 'destroy']);
+    Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
+});
+
+Route::prefix('applications')->middleware('auth:sanctum')->group(function () {
+    Route::patch('/{applicationId}/status', [ApplicationController::class, 'updateApplicationStatus']);
+});
+// get_current_user
+// http://localhost:8000/api/auth/get_current_user
+Route::get('/auth/get_current_user', [AuthController::class, 'get_current_user'])->middleware('auth:sanctum');
+// checkemail
+// http://localhost:8000/api/auth/checkemail
+Route::post('/auth/checkemail', [AuthController::class, 'checkemail']);

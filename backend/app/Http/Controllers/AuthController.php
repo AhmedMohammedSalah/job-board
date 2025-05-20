@@ -7,53 +7,108 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
-
+use App\Models\Empoloyer;
+use App\Models\Candidate;
 
 
 class AuthController extends Controller
 {
-   public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:employer,candidate', // employer or candidate
-        ]);
+//    public function register(Request $request)
+//     {
+//         $validator = Validator::make($request->all(), [
+//             'name' => 'required|string|max:255',
+//             'email' => 'required|string|email|max:255|unique:users',
+//             'password' => 'required|string|min:8|confirmed',
+//             'role' => 'required|in:employer,candidate,admin', // employer or candidate
+//         ]);
+        
 
-        if ($validator->fails()) {
-            $errors = $validator->errors();
-            
-            if ($errors->has('email') && User::where('email', $request->email)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Email already exists',
-                    'errors' => ['email' => 'This email is already registered']
-                ], 422);
-            }
+//         if ($validator->fails()) {
+//             $errors = $validator->errors();
 
+//             if ($errors->has('email') && User::where('email', $request->email)->exists()) {
+//                 return response()->json([
+//                     'success' => false,
+//                     'message' => 'Email already exists',
+//                     'errors' => ['email' => 'This email is already registered']
+//                 ], 422);
+//             }
+
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'Validation failed',
+//                 'errors' => $errors->all()
+//             ], 422);
+//         }
+
+//         $user = User::create([
+//             'name' => $request->name,
+//             'email' => $request->email,
+//             'password' => Hash::make($request->password),
+//             'role' => $request->role // employer or candidate
+//         ]);
+
+//         return response()->json([
+//             'success' => true,
+//             'user' => $user,
+//             'token' => $user->createToken('auth_token')->plainTextToken
+//         ], 201);
+
+//     }
+
+
+
+
+public function register(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8|confirmed',
+        'role' => 'required|in:employer,candidate,admin', // employer or candidate
+    ]);
+
+    if ($validator->fails()) {
+        $errors = $validator->errors();
+
+        if ($errors->has('email') && User::where('email', $request->email)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $errors->all()
+                'message' => 'Email already exists',
+                'errors' => ['email' => 'This email is already registered']
             ], 422);
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role // employer or candidate
-        ]);
-
         return response()->json([
-            'success' => true,
-            'user' => $user,
-            'token' => $user->createToken('auth_token')->plainTextToken
-        ], 201);
-        
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $errors->all()
+        ], 422);
     }
 
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => $request->role
+    ]);
+
+    if ($user->role === 'employer') {
+        Empoloyer::create([
+            'user_id' => $user->id,
+        ]);
+    } elseif ($user->role === 'candidate') {
+        Candidate::create([
+            'id' => $user->id,
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'user' => $user,
+        'token' => $user->createToken('auth_token')->plainTextToken
+    ], 201);
+}
 
 
 
@@ -92,7 +147,7 @@ class AuthController extends Controller
             'token' => $user->createToken('auth_token')->plainTextToken
         ]);
     }
-   
+
 
 
     public function logout(Request $request)
@@ -135,30 +190,48 @@ public function sendResetEmail(Request $request)
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-      
+
         return response()->json(['message' => 'Password reset  email sent'], 200);
     }
-
+    public function  get_current_user(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+        return response()->json($user, 200);
+    }
 
 
     public function reset(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|confirmed',
-            'token' => 'required'
+            'password' => 'required|confirmed'
+            // 'token' => 'required'
         ]);
         // Logic to reset password
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
+        $user->password = Hash::make($request->password);
+        $user->save();
         // Verify the token and reset the password
         // This is a placeholder for actual password reset logic
         return response()->json(['message' => 'Password reset successfully'], 200);
     }
-    
+      public function checkemail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
 
+        $user = User::where('email', $request->email)->first();
+        if ($user) {
+            return response()->json(['message' => 'Now You Can Change Password '], 200);
+        }
 
-   
+        return response()->json(['error' => 'Email does not exist'], 404);
+    }
 }
+
+

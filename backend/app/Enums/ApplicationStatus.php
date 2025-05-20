@@ -8,6 +8,8 @@ enum ApplicationStatus: string
     case REVIEWED = 'reviewed';
     case ACCEPTED = 'accepted';
     case REJECTED = 'rejected';
+    case HIRED = 'hired';
+    case SHORTLISTED = 'shortlisted';
 
     public function label(): string
     {
@@ -16,6 +18,7 @@ enum ApplicationStatus: string
             self::REVIEWED => 'Reviewed',
             self::ACCEPTED => 'Accepted',
             self::REJECTED => 'Rejected',
+            self::SHORTLISTED => 'Shortlisted',
         };
     }
 }
