@@ -19,7 +19,7 @@ class ApplicationController extends Controller
 
     {
         $user = Auth::user();
-        
+
         $job = Job::where('id', $jobId)
             ->where('employer_id', $user->employer->id)
             ->first();
@@ -77,7 +77,7 @@ class ApplicationController extends Controller
         }
 
         $user = Auth::user();
-        
+
         $application = Application::with('job')
             ->where('id', $applicationId)
             ->whereHas('job', function ($query) use ($user) {
@@ -90,11 +90,11 @@ class ApplicationController extends Controller
         }
 
         $application->status = $request->status;
-        
+
         if ($request->has('employer_notes')) {
             $application->employer_notes = $request->employer_notes;
         }
-        
+
         $application->save();
 
         return response()->json([
@@ -105,14 +105,14 @@ class ApplicationController extends Controller
 
     /**
      * Accept a job application
-     * 
+     *
      * @param int $applicationId
      * @return \Illuminate\Http\JsonResponse
      */
     public function acceptApplication($applicationId)
     {
         $user = Auth::user();
-        
+
         // Start a database transaction for data integrity
         return DB::transaction(function () use ($applicationId, $user) {
             $application = Application::with(['job', 'user'])
@@ -121,22 +121,22 @@ class ApplicationController extends Controller
                     $query->where('employer_id', $user->employer->id);
                 })
                 ->first();
-            
+
             if (!$application) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Application not found'
                 ], 404);
             }
-            
+
             // Update the application status to hired
             $application->status = 'hired';
             $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application accepted.";
             $application->save();
-            
+
             // Update the job if needed (e.g., mark as filled or reduce openings)
             $job = $application->job;
-            
+
             // Optional: You might want to mark other applications as rejected
             // Uncomment if this is desired behavior
             /*
@@ -148,7 +148,7 @@ class ApplicationController extends Controller
                     'employer_notes' => DB::raw("CONCAT(IFNULL(employer_notes, ''), '\n[" . now()->format('Y-m-d H:i:s') . "] Application rejected as another candidate was hired.')")
                 ]);
             */
-            
+
             // Return the updated application with related user info
             return response()->json([
                 'status' => 'success',
@@ -195,7 +195,7 @@ class ApplicationController extends Controller
 
     /**
      * Reject a job application
-     * 
+     *
      * @param int $applicationId
      * @return \Illuminate\Http\JsonResponse
      */
@@ -203,26 +203,26 @@ class ApplicationController extends Controller
     public function rejectApplication($applicationId)
     {
         $user = Auth::user();
-        
+
         $application = Application::with(['job', 'user'])
             ->where('id', $applicationId)
             ->whereHas('job', function ($query) use ($user) {
                 $query->where('employer_id', $user->employer->id);
             })
             ->first();
-        
+
         if (!$application) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Application not found'
             ], 404);
         }
-        
+
         // Update the application status to rejected
         $application->status = 'rejected';
         $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application rejected.";
         $application->save();
-        
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -247,24 +247,24 @@ class ApplicationController extends Controller
 
         return response()->json($application, 200);
     }
-    
+
     /**
      * Get all applications for the authenticated user
-     * 
+     *
      * @return \Illuminate\Http\JsonResponse
      */
 
     public function employerApplications()
     {
         $user = Auth::user();
-        
+
         if (!$user->employer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
-        
+
         $applications = Application::with(['job', 'user'])
             ->whereHas('job', function ($query) use ($user) {
                 $query->where('employer_id', $user->employer->id);
@@ -282,7 +282,7 @@ class ApplicationController extends Controller
                     'applied_date' => $application->created_at->format('M d, Y'),
                 ];
             });
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $applications,
@@ -330,7 +330,10 @@ class ApplicationController extends Controller
 
         foreach ($applications as $application) {
             $jobs[] = Job::where('id', $application->job_id)
-                ->with('category')
+            ->with('category')
+            ->with(['applications' => function ($query) use ($id) {
+                $query->where('candidate_id', $id);
+            }])
                 ->first();
         }
         // return $applications ;

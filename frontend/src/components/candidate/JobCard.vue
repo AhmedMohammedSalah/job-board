@@ -1,10 +1,14 @@
 <!-- components/candidate/JobCard.vue -->
 <template>
   <div class="job-card" v-if="!loading && !error">
+    <div class="application-status" :class="applicationStatusClass">
+      <font-awesome-icon :icon="statusIcon" />
+      <span>My application: {{ applicationStatusText }}</span>
+    </div>
+    
     <div class="job-header">
       <div class="company-info">
         <div class="logo-placeholder">
-          <!-- Add company logo here if available -->
           <font-awesome-icon :icon="['fas', 'building']" class="company-icon" />
         </div>
         <div class="job-meta">
@@ -44,7 +48,7 @@
           {{ skill }}
         </span>
       </div>
-      <button class="apply-button" @click="$emit('view-job', job.id)">
+      <button class="view-button" @click="$emit('view-job', job.id)">
         View Details
       </button>
     </div>
@@ -89,14 +93,59 @@ const workTypeMap = {
   onsite: { label: "On-site", icon: ["fas", "briefcase"], class: "onsite" },
   hybrid: { label: "Hybrid", icon: ["fas", "balance-scale"], class: "hybrid" },
 };
+
+const statusMap = {
+  pending: { 
+    text: "Pending Review", 
+    class: "status-pending", 
+    icon: ["fas", "hourglass-half"] 
+  },
+  reviewed: { 
+    text: "Under Review", 
+    class: "status-reviewed", 
+    icon: ["fas", "eye"] 
+  },
+  accepted: { 
+    text: "Accepted", 
+    class: "status-accepted", 
+    icon: ["fas", "check-circle"] 
+  },
+  rejected: { 
+    text: "Not Selected", 
+    class: "status-rejected", 
+    icon: ["fas", "times-circle"] 
+  },
+  hired: { 
+    text: "Hired!", 
+    class: "status-hired", 
+    icon: ["fas", "trophy"] 
+  }
+};
+
 onMounted(() => {
-  // Simulate loading state
   setTimeout(() => {
     loading.value = false;
-  }, 1000 );
+  }, 1000);
   console.log("JobCard mounted with job:", props.job);
 });
+
 // Computed properties
+const applicationStatus = computed(() => {
+  return props.job.applications?.[0]?.status || "pending";
+});
+
+const applicationStatusText = computed(() => {
+  return statusMap[applicationStatus.value]?.text || "Pending Review";
+});
+
+const applicationStatusClass = computed(() => {
+  return statusMap[applicationStatus.value]?.class || "status-pending";
+});
+
+const statusIcon = computed(() => {
+  return statusMap[applicationStatus.value]?.icon || ["fas", "hourglass-half"];
+});
+
 const workTypeLabel = computed(
   () => workTypeMap[props.job.work_type]?.label || ""
 );
@@ -126,6 +175,7 @@ const timeLeft = computed(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
   margin-bottom: 16px;
+  position: relative;
 }
 
 .job-card:hover {
@@ -133,11 +183,52 @@ const timeLeft = computed(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.application-status {
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-pending {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-reviewed {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-accepted {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-rejected {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-hired {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  font-weight: bold;
+}
+
 .job-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
+  margin-top: 10px;
 }
 
 .company-info {
@@ -249,7 +340,7 @@ const timeLeft = computed(() => {
   color: #666;
 }
 
-.apply-button {
+.view-button {
   background: #1976d2;
   color: white;
   border: none;
@@ -259,7 +350,7 @@ const timeLeft = computed(() => {
   transition: background 0.2s ease;
 }
 
-.apply-button:hover {
+.view-button:hover {
   background: #1565c0;
 }
 
