@@ -20,6 +20,9 @@ import candidateSettings from "../views/candidate/CandidateSettings.vue";
 import RecentlyApplied from "../components/candidate/RecentlyApplied.vue";
 import Myjobs from "../components/employer/MyJobs.vue";
 import PostJob from "../components/employer/PostJob.vue";
+import NotFound from "../pages/Common/NotFound.vue";
+import FavoriteJobs from "../views/candidate/FavoriteJobs.vue";
+
 const routes = [
   {
     path: "/",
@@ -82,12 +85,24 @@ const routes = [
         name: "ThankYouPage",
         component: ThankYouPage,
       },
+      // favorite 
+      {
+        path: "/favorite-jobs",
+        name: "favorite-jobs",
+        component:FavoriteJobs,
+      }
     ],
   },
   {
     path: "/register",
     name: "Register",
     component: Register,
+  },
+  {
+    path: "/pending-jobs",
+    name: "PendingJobs",
+    component: PendingJobsView,
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: "/login",
@@ -129,6 +144,12 @@ const routes = [
     path: "/PostJob",
     name: "PostJob",
     component: PostJob,
+  },
+  // 404 page
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: NotFound,
   },
 ];
 

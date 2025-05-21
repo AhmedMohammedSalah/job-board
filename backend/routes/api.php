@@ -48,6 +48,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::ApiResource('skills', SkillController::class);
     // [AMS] Candidate Skills ApiRoute
     Route::ApiResource('candidate-skills', CandidateSkillController::class);
+    // Favorite
+    Route::get('/favorite-jobs', [JobController::class, 'favoriteJobs']);
+    Route::post('/favorite-jobs', [JobController::class, 'addFavorite']);
+    Route::delete('/favorite-jobs/{job_id}', [JobController::class, 'removeFavorite']);
+    // check if job is favorite
+    Route::get('/favorite-jobs/check/{job_id}', [JobController::class, 'isFavorite']);
 });
 
 
