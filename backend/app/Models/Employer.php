@@ -5,10 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Empoloyer extends Model
+class Employer extends Model
 {
     /** @use HasFactory<\Database\Factories\EmpoloyerFactory> */
     use HasFactory;
+    protected $table = 'employers';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    
     protected $fillable = [
         'user_id',
         'company_name',

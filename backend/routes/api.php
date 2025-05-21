@@ -6,10 +6,10 @@ use App\Http\Controllers\CommentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\EmployerController;
-use App\Http\Controllers\JobCommentController;
+// use App\Http\Controllers\Api\EmployerController;
+use App\Http\Controllers\api\JobCommentController;
+use App\Http\Controllers\api\JobPostController;
 use App\Http\Controllers\JobController;
-
 // use ApplicationController
 use App\Http\Controllers\api\CandidateController;
 
@@ -49,9 +49,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::ApiResource('skills', SkillController::class);
     // [AMS] Candidate Skills ApiRoute
     Route::ApiResource('candidate-skills', CandidateSkillController::class);
+    // Favorite
+    Route::get('/favorite-jobs', [JobController::class, 'favoriteJobs']);
+    Route::post('/favorite-jobs', [JobController::class, 'addFavorite']);
+    Route::delete('/favorite-jobs/{job_id}', [JobController::class, 'removeFavorite']);
+    // check if job is favorite
+    Route::get('/favorite-jobs/check/{job_id}', [JobController::class, 'isFavorite']);
 });
-Route::post('/employers/register', [EmployerController::class, 'register']);
-Route::post('/employers/login', [EmployerController::class, 'login']);
+
 
 Route::post('/auth/password/email', [AuthController::class, 'sendResetEmail']);
 Route::post('/auth/password/email', [AuthController::class, 'sendResetEmail']);
@@ -64,6 +69,24 @@ Route::post('/auth/password/reset', [AuthController::class, 'reset']);
 //filter
 Route::get('/jobs/filter', [JobController::class, 'filterJobs']);
 Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
+
+        Route::get('/jobs', [JobPostController::class, 'index']);
+        Route::post('/jobs', [JobPostController::class, 'store']);
+        Route::get('/jobs/{id}', [JobPostController::class, 'show']);
+        Route::put('/jobs/{id}', [JobPostController::class, 'update']);
+        Route::delete('/jobs/{id}', [JobPostController::class, 'destroy']);
+
+        // Applications for a specific job
+        Route::get('/jobs/{id}/applications', [JobPostController::class, 'applications']);
+
+        // All applications across all employer jobs
+        Route::get('/applications', [JobPostController::class, 'employerApplications']);
+
+        // Accept/reject/update a specific application
+        Route::post('/jobs/{jobId}/applications/{applicationId}/accept', [JobPostController::class, 'acceptApplication'])->middleware('auth:sanctum');
+        Route::post('/jobs/{jobId}/applications/{applicationId}/reject', [JobPostController::class, 'rejectApplication'])->middleware('auth:sanctum');
+        Route::put('/jobs/{jobId}/applications/{applicationId}/status', [JobPostController::class, 'updateApplicationStatus'])->middleware('auth:sanctum');
+
 
 Route::prefix('jobs')->group(function () {
     Route::get('/', [JobController::class, 'index']);

@@ -41,6 +41,7 @@
 
 <script>
 import axios from 'axios';
+import AppHeader from '../../components/homePage/AppHeader.vue';
 
 export default {
     data() {

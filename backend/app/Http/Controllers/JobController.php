@@ -6,6 +6,8 @@ use App\Models\Job;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+// FavoriteJob
+use App\Models\FavoriteJob;
 use Illuminate\Support\Facades\Validator;
 
 class JobController extends Controller
@@ -373,5 +375,62 @@ public function getFilterOptions()
 
         return $query->orderBy('created_at', 'desc')->paginate(10);
     }
+// [AMS] FAVORITE SECTION
 
+    // handle add to favorite
+    public function addFavorite(Request $request){
+        $request->validate([
+            'job_id' => 'required|exists:jobs,id',
+        ]);
+        $user = auth()->user();
+        $job = Job::find($request->job_id);
+        if (!$job) {
+            return response()->json(['message' => 'Job not found'], 404);
+        }
+        $favoriteJob = FavoriteJob::where('user_id', $user->id)
+            ->where('job_id', $request->job_id)
+            ->first();
+        if ($favoriteJob) {
+            return response()->json(['message' => 'Job already in favorites'], 409);
+        }
+        $favoriteJob = new FavoriteJob();
+        $favoriteJob->user_id = $user->id;
+        $favoriteJob->job_id = $request->job_id;
+        $favoriteJob->save();
+        return response()->json(['message' => 'Job added to favorites successfully']);
+    }
+    // handle remove from favorite
+    public function removeFavorite(Request $request, $job_id ){
+        $user = auth()->user();
+        $favoriteJob = FavoriteJob::where('user_id', $user->id)
+            ->where('job_id', $request->job_id)
+            ->first();
+        if (!$favoriteJob) {
+            return response()->json(['message' => 'Job not in favorites'], 404);
+        }
+        $favoriteJob->delete();
+        return response()->json(['message' => 'Job removed from favorites successfully']);
+    }
+
+    // handle get favorite jobs
+    public function favoriteJobs(){
+        $user = auth()->user();
+        $favoriteJobs = FavoriteJob::where('user_id', $user->id)
+            ->with('job')
+            ->get();
+        return response()->json(['favorite_jobs' => $favoriteJobs]);
+    }
+    // handle check if job is favorite
+    public function isFavorite(Request $request, $job_id){
+
+        $user = auth()->user();
+        $favoriteJob = FavoriteJob::where('user_id', $user->id)
+            ->where('job_id', $job_id)
+            ->first();
+        if ($favoriteJob) {
+            return response()->json(['is_favorite' => true]);
+        } else {
+            return response()->json(['is_favorite' => false]);
+        }
+    }
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="candidate-home">
-    <Navbar />
+    <!-- <Navbar /> -->
 
     <main class="main-content">
       <button @click="toggleSidebar" class="filter-toggle-btn">
@@ -52,7 +52,7 @@
       @click="showSidebar = false"
     ></div>
 
-    <AppFooter />
+    <!-- <AppFooter /> -->
   </div>
 </template>
 

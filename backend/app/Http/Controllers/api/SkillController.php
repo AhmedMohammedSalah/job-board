@@ -24,7 +24,7 @@ class SkillController extends Controller
     {
         //
         $request -> validate([
-            'name' => 'required|string|max:255|uniqu',
+            'name' => 'required|string|max:255| unique:skills,name',
         ]);
         $skill = new Skill();
         $skill-> name = $request-> name;

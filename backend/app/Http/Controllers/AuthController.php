@@ -7,44 +7,106 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
-
-
+use App\Models\Employer;
+use App\Models\Candidate;
+// DB
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
-   public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:employer,candidate,admin', // employer or candidate
-        ]);
+//    public function register(Request $request)
+//     {
+//         $validator = Validator::make($request->all(), [
+//             'name' => 'required|string|max:255',
+//             'email' => 'required|string|email|max:255|unique:users',
+//             'password' => 'required|string|min:8|confirmed',
+//             'role' => 'required|in:employer,candidate,admin', // employer or candidate
+//         ]);
 
-        if ($validator->fails()) {
-            $errors = $validator->errors();
 
-            if ($errors->has('email') && User::where('email', $request->email)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Email already exists',
-                    'errors' => ['email' => 'This email is already registered']
-                ], 422);
-            }
+//         if ($validator->fails()) {
+//             $errors = $validator->errors();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $errors->all()
-            ], 422);
-        }
+//             if ($errors->has('email') && User::where('email', $request->email)->exists()) {
+//                 return response()->json([
+//                     'success' => false,
+//                     'message' => 'Email already exists',
+//                     'errors' => ['email' => 'This email is already registered']
+//                 ], 422);
+//             }
 
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'Validation failed',
+//                 'errors' => $errors->all()
+//             ], 422);
+//         }
+
+//         $user = User::create([
+//             'name' => $request->name,
+//             'email' => $request->email,
+//             'password' => Hash::make($request->password),
+//             'role' => $request->role // employer or candidate
+//         ]);
+
+//         return response()->json([
+//             'success' => true,
+//             'user' => $user,
+//             'token' => $user->createToken('auth_token')->plainTextToken
+//         ], 201);
+
+//     }
+
+
+
+
+public function register(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8|confirmed',
+        'role' => 'required|in:employer,candidate,admin',
+        // 'company_name' => 'required_if:role,employer|string|max:255', // Add validation
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        // Create user first
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role // employer or candidate
+            'role' => $request->role
         ]);
+
+        // Create role-specific profile
+        if ($user->role === 'employer') {
+            $employer = new Employer();
+            $employer->id = $user->id; // Explicitly set ID
+            $employer->company_name = "company_name";
+            $employer->created_at = now();
+            $employer->updated_at = now();
+            $employer->save(); // Use save() instead of create()
+        } elseif ($user->role === 'candidate') {
+            Candidate::create([
+                'id' => $user->id,
+                // Add candidate-specific fields
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+
+        DB::commit();
 
         return response()->json([
             'success' => true,
@@ -52,8 +114,15 @@ class AuthController extends Controller
             'token' => $user->createToken('auth_token')->plainTextToken
         ], 201);
 
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Registration failed',
+            'error' => $e->getMessage()
+        ], 500);
     }
-
+}
 
 
 

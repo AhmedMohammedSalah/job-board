@@ -72,9 +72,33 @@
       <div class="settings-section">
         <div class="section-header">
           <h3>Skills & Expertise</h3>
-          <button class="btn btn-primary" @click="showAddSkillModal = true">
-            Add Skill
+          <button class="btn btn-primary" @click="showAddSkillForm = !showAddSkillForm">
+            {{ showAddSkillForm ? 'Hide' : 'Add Skill' }}
           </button>
+        </div>
+
+        <!-- Inline Add Skill Form -->
+        <div v-if="showAddSkillForm" class="add-skill-form">
+          <div class="form-group">
+            <label>Skill Name</label>
+            <input v-model="newSkill.name" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Skill Level</label>
+            <select v-model="newSkill.level" class="form-control">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="expert">Expert</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-secondary" @click="cancelAddSkill">
+              Cancel
+            </button>
+            <button class="btn btn-primary" @click="addNewSkill">
+              Add Skill
+            </button>
+          </div>
         </div>
 
         <div class="skills-container">
@@ -108,16 +132,6 @@
         </div>
       </div>
 
-      <!-- Resume Upload -->
-      <!-- <div class="settings-section">
-        <h3>Resume</h3>
-        <file-upload
-          v-model="formData.resume"
-          :current-file="formData.resume_path"
-          @update:modelValue="handleResumeUpload"
-        />
-      </div> -->
-
       <!-- Save Button -->
       <div class="form-actions">
         <button
@@ -129,45 +143,18 @@
         </button>
       </div>
     </div>
-
-    <!-- Add Skill Modal -->
-    <modal v-if="showAddSkillModal" @close="showAddSkillModal = false">
-      <template #header>Add New Skill</template>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Skill Name</label>
-          <input v-model="newSkill.name" type="text" class="form-control" />
-        </div>
-        <div class="form-group">
-          <label>Skill Level</label>
-          <select v-model="newSkill.level" class="form-control">
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="expert">Expert</option>
-          </select>
-        </div>
-      </div>
-      <template #footer>
-        <button class="btn btn-secondary" @click="showAddSkillModal = false">
-          Cancel
-        </button>
-        <button class="btn btn-primary" @click="addNewSkill">Add Skill</button>
-      </template>
-    </modal>
   </div>
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { useVuelidate } from "@vuelidate/core";
 import { required, email } from "@vuelidate/validators";
 import api from "@/services/api.js";
 import Multiselect from "vue-multiselect";
-import Modal from "@/components/common/Modal.vue";
-import FileUpload from "@/components/common/FileUpload.vue";
 
 export default {
-  components: { Multiselect, Modal, FileUpload },
+  components: { Multiselect },
   setup() {
     const formData = reactive({
       headline: "",
@@ -175,17 +162,11 @@ export default {
       linkedin_url: null,
       resume: null,
       resume_path: null,
-      user: {
-        name: "",
-        email: "",
-      },
+      user: { name: "", email: "" },
     });
 
     const rules = {
-      user: {
-        name: { required },
-        email: { required, email },
-      },
+      user: { name: { required }, email: { required, email } },
     };
 
     const v$ = useVuelidate(rules, formData);
@@ -193,14 +174,12 @@ export default {
     const skillOptions = ref([]);
     const candidateSkills = ref([]);
     const selectedSkills = ref([]);
-    const showAddSkillModal = ref(false);
+    const showAddSkillForm = ref(false);
     const newSkill = reactive({ name: "", level: "intermediate" });
     const loading = ref(false);
 
-    // Get user ID from localStorage
     const userId = JSON.parse(localStorage.getItem("user")).id;
 
-    // Fetch initial data
     const fetchData = async () => {
       try {
         const [profileRes, skillsRes, candidateSkillsRes] = await Promise.all([
@@ -208,8 +187,6 @@ export default {
           api.candidate.getSkills(),
           api.candidate.getCandidateSkills(),
         ]);
-
-        // Populate form data
         Object.assign(formData, profileRes.data);
         skillOptions.value = skillsRes.data;
         candidateSkills.value = candidateSkillsRes.data;
@@ -218,40 +195,38 @@ export default {
       }
     };
 
-    // Get skill name by ID
     const getSkillName = (skillId) => {
       const skill = skillOptions.value.find((s) => s.id === skillId);
       return skill ? skill.name : "Unknown Skill";
     };
 
-    // Add new skill
     const addNewSkill = async () => {
       try {
-        // First add the skill
         const skillRes = await api.candidate.addSkill(newSkill.name);
-
-        // Then add to candidate skills
         await api.candidate.addCandidateSkill(skillRes.data.id, newSkill.level);
-
-        // Update local state
         skillOptions.value.push(skillRes.data);
         candidateSkills.value.push({
           skill_id: skillRes.data.id,
           level: newSkill.level,
         });
-
-        showAddSkillModal.value = false;
-        newSkill.name = "";
-        newSkill.level = "intermediate";
+        resetAddForm();
       } catch (error) {
         console.error("Error adding skill:", error);
       }
     };
 
-    // Remove skill
+    const cancelAddSkill = () => {
+      resetAddForm();
+    };
+
+    const resetAddForm = () => {
+      showAddSkillForm.value = false;
+      newSkill.name = "";
+      newSkill.level = "intermediate";
+    };
+
     const removeSkill = async (candidateSkillId) => {
       try {
-        // await api.delete(`/candidate-skills/${candidateSkillId}`);
         candidateSkills.value = candidateSkills.value.filter(
           (s) => s.id !== candidateSkillId
         );
@@ -260,17 +235,11 @@ export default {
       }
     };
 
-    // Handle resume upload
-    const handleResumeUpload = (file) => {
-      formData.resume = file;
-    };
-      // Upload resume
-    
-    // Save profile
+    const hideResume = () => {};
+
     const saveProfile = async () => {
       const isValid = await v$.value.$validate();
       if (!isValid) return;
-
       loading.value = true;
       try {
         const data = {
@@ -282,14 +251,7 @@ export default {
             email: formData.user.email,
           },
         };
-
-        // If new resume uploaded
-          if ( formData.resume ) {
-            // the file will be added to the formdata
-        }
-
         await api.candidate.updateProfile(data, userId);
-        // Show success message
       } catch (error) {
         console.error("Error updating profile:", error);
       } finally {
@@ -305,13 +267,13 @@ export default {
       skillOptions,
       candidateSkills,
       selectedSkills,
-      showAddSkillModal,
+      showAddSkillForm,
       newSkill,
       loading,
       getSkillName,
       addNewSkill,
       removeSkill,
-      handleResumeUpload,
+      cancelAddSkill,
       saveProfile,
     };
   },
@@ -319,7 +281,6 @@ export default {
 </script>
 
 <style scoped>
-/* Add your styles matching the Figma design here */
 .settings-card {
   background: white;
   border-radius: 12px;
@@ -371,8 +332,15 @@ export default {
   gap: 1.5rem;
 }
 
+.add-skill-form {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+}
+
 .form-actions {
-  margin-top: 2rem;
+  margin-top: 1rem;
   text-align: right;
 }
 </style>
