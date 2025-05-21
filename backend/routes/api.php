@@ -51,7 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Favorite
     Route::get('/favorite-jobs', [JobController::class, 'favoriteJobs']);
     Route::post('/favorite-jobs', [JobController::class, 'addFavorite']);
-    Route::delete('/favorite-jobs', [JobController::class, 'removeFavorite']);
+    Route::delete('/favorite-jobs/{job_id}', [JobController::class, 'removeFavorite']);
+    // check if job is favorite
+    Route::get('/favorite-jobs/check/{job_id}', [JobController::class, 'isFavorite']);
 });
 
 

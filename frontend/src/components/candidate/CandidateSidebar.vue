@@ -31,11 +31,12 @@ const menuItems = [
     title: "Recently Applied Jobs", 
     route: "/candidate/recentlyApplied" 
   },
-  // { 
-  //   icon: faHeart, 
-  //   title: "Favorite Jobs", 
-  //   route: "/candidate/saved-jobs" 
-  // },
+  { 
+    icon: faHeart,
+    title: "Favorite Jobs",
+    route: "/favorite-jobs"
+  },
+  
   { 
     icon: faUser, 
     title: "Settings", 

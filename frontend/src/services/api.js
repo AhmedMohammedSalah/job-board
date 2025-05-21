@@ -74,11 +74,19 @@ export default {
     updateProfile(data, id) {
       return api.put(`candidate/${id}`, data);
     },
+    // favorite job
+    addFavoriteJob(jobId) {
+      return api.post("/favorite-jobs", { job_id: jobId });
+    },
+    removeFavoriteJob(jobId) {
+      return api.delete( `/favorite-jobs/${jobId}`);
+    },
+    getFavoriteJobs() {
+      return api.get("/favorite-jobs");
+    },
+    isFavoriteJob(jobId) {
+      return api.get(`/favorite-jobs/check/${jobId}`);
+    }
   },
-  admin:{
-    getAlljobs(){
-      return api.get("/admin");
-      },
-  }
 };
 // const alljobs = await api.admin.getAlljobs()

@@ -19,6 +19,7 @@ import CandidateOverview from "../views/candidate/CandidateOverview.vue";
 import candidateSettings from "../views/candidate/CandidateSettings.vue";
 import RecentlyApplied from "../components/candidate/RecentlyApplied.vue";
 import NotFound from "../pages/Common/NotFound.vue";
+import FavoriteJobs from "../views/candidate/FavoriteJobs.vue";
 
 const routes = [
   {
@@ -76,6 +77,12 @@ const routes = [
         name: "ThankYouPage",
         component: ThankYouPage,
       },
+      // favorite 
+      {
+        path: "/favorite-jobs",
+        name: "favorite-jobs",
+        component:FavoriteJobs,
+      }
     ],
   },
   {

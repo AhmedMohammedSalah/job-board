@@ -400,10 +400,7 @@ public function getFilterOptions()
         return response()->json(['message' => 'Job added to favorites successfully']);
     }
     // handle remove from favorite
-    public function removeFavorite(Request $request){
-        $request->validate([
-            'job_id' => 'required|exists:jobs,id',
-        ]);
+    public function removeFavorite(Request $request, $job_id ){
         $user = auth()->user();
         $favoriteJob = FavoriteJob::where('user_id', $user->id)
             ->where('job_id', $request->job_id)
@@ -422,5 +419,18 @@ public function getFilterOptions()
             ->with('job')
             ->get();
         return response()->json(['favorite_jobs' => $favoriteJobs]);
+    }
+    // handle check if job is favorite
+    public function isFavorite(Request $request, $job_id){
+
+        $user = auth()->user();
+        $favoriteJob = FavoriteJob::where('user_id', $user->id)
+            ->where('job_id', $job_id)
+            ->first();
+        if ($favoriteJob) {
+            return response()->json(['is_favorite' => true]);
+        } else {
+            return response()->json(['is_favorite' => false]);
+        }
     }
 }
