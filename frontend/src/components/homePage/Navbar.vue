@@ -1,6 +1,6 @@
 <template>
   <header class="navbar">
-    <div class="navbar-container ">
+    <div class="navbar-container">
       <!-- Logo Section -->
       <router-link to="/" class="logo-section">
         <BriefcaseIcon class="logo-icon" />
@@ -8,15 +8,22 @@
         <div class="logo-badge">Pro</div>
       </router-link>
 
-
       <!-- User Actions -->
       <div class="user-actions">
-        <button v-if="!isLoggedIn" class="auth-btn login-btn" @click="navigateToLogin">
+        <button
+          v-if="!isLoggedIn"
+          class="auth-btn login-btn"
+          @click="navigateToLogin"
+        >
           <ArrowRightOnRectangleIcon class="btn-icon" />
           <span>Sign In</span>
         </button>
-        
-        <button v-if="!isLoggedIn" class="auth-btn primary-btn" @click="navigateToPostJob">
+
+        <button
+          v-if="!isLoggedIn"
+          class="auth-btn primary-btn"
+          @click="navigateToPostJob"
+        >
           <PlusCircleIcon class="btn-icon" />
           <span>Post Job</span>
           <RocketLaunchIcon class="btn-decorator" />
@@ -27,16 +34,16 @@
             <BellAlertIcon class="icon" />
             <span class="notification-badge">3</span>
           </button>
-          
+
           <div class="user-avatar">
             <UserCircleIcon class="avatar-icon" />
           </div>
-          
+
           <div class="user-info">
             <span class="user-greeting">Welcome back</span>
             <span class="user-name">{{ userName }}</span>
           </div>
-          
+
           <button class="logout-btn" @click="logout">
             <ArrowLeftOnRectangleIcon class="btn-icon" />
           </button>
@@ -47,10 +54,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
-import { 
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import axios from "axios";
+import {
   BriefcaseIcon,
   ArrowRightOnRectangleIcon,
   PlusCircleIcon,
@@ -61,70 +68,77 @@ import {
   BellIcon,
   BellAlertIcon,
   UserCircleIcon,
-  RocketLaunchIcon
-} from '@heroicons/vue/24/outline'
+  RocketLaunchIcon,
+} from "@heroicons/vue/24/outline";
 
-const router = useRouter()
-const isLoggedIn = ref(false)
-const userName = ref('')
-const token = ref(localStorage.getItem('auth_token') || '')
+const router = useRouter();
+const isLoggedIn = ref(false);
+const userName = ref("");
+const token = ref(localStorage.getItem("auth_token") || "");
 
 // Fetch current user data
 const fetchCurrentUser = async () => {
   if (token.value) {
     try {
-      const response = await axios.get('http://localhost:8000/api/auth/get_current_user', {
-        headers: { Authorization: `Bearer ${token.value}` }
-      })
-      isLoggedIn.value = true
-      userName.value = response.data.name || 'User'
+      const response = await axios.get(
+        "http://localhost:8000/api/auth/get_current_user",
+        {
+          headers: { Authorization: `Bearer ${token.value}` },
+        }
+      );
+      isLoggedIn.value = true;
+      userName.value = response.data.name || "User";
     } catch (error) {
-      console.error('Error fetching user:', error)
-      isLoggedIn.value = false
-      userName.value = ''
-      token.value = ''
+      console.error("Error fetching user:", error);
+      isLoggedIn.value = false;
+      userName.value = "";
+      token.value = "";
     }
   } else {
-    const userData = JSON.parse(localStorage.getItem('user'))
+    const userData = JSON.parse(localStorage.getItem("user"));
     if (userData) {
-      isLoggedIn.value = true
-      userName.value = userData.name || userData.username || 'User'
+      isLoggedIn.value = true;
+      userName.value = userData.name || userData.username || "User";
     }
   }
-}
+};
 
 onMounted(() => {
-  token.value = localStorage.getItem('auth_token') || ''
-  fetchCurrentUser()
-})
+  token.value = localStorage.getItem("auth_token") || "";
+  fetchCurrentUser();
+});
 
-const navigateToLogin = () => router.push('/login')
-const navigateToPostJob = () => router.push('/post-job')
+const navigateToLogin = () => router.push("/login");
+const navigateToPostJob = () => router.push("/post-job");
 
 const logout = async () => {
   try {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+    await axios.get("http://localhost:8000/sanctum/csrf-cookie");
     if (token.value) {
-      await axios.post('http://localhost:8000/api/logout', {}, {
-        headers: { Authorization: `Bearer ${token.value}` }
-      })
+      await axios.post(
+        "http://localhost:8000/api/logout",
+        {},
+        {
+          headers: { Authorization: `Bearer ${token.value}` },
+        }
+      );
     }
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user')
-    isLoggedIn.value = false
-    userName.value = ''
-    token.value = ''
-    router.push('/login')
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+    isLoggedIn.value = false;
+    userName.value = "";
+    token.value = "";
+    router.push("/login");
   } catch (error) {
-    console.error('Logout error:', error)
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user')
-    isLoggedIn.value = false
-    userName.value = ''
-    token.value = ''
-    router.push('/login')
+    console.error("Logout error:", error);
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+    isLoggedIn.value = false;
+    userName.value = "";
+    token.value = "";
+    router.push("/login");
   }
-}
+};
 </script>
 
 <style scoped>
@@ -155,7 +169,6 @@ const logout = async () => {
   gap: 0.75rem;
   text-decoration: none;
   position: relative;
-
 }
 
 .logo-icon {
@@ -219,7 +232,7 @@ const logout = async () => {
 }
 
 .nav-link.router-link-active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;

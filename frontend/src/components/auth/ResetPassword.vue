@@ -1,150 +1,183 @@
 <template>
-    <div class="container-fluid login-container">
-      <div class="row g-0">
-        <!-- Reset Password Form Section -->
-        <div class="col-lg-6 login-form-section">
-          <div class="login-form-wrapper">
-            <div class="header">
-              <h1 class="title">Reset Password</h1>
-              <p class="instruction-text">Please enter your new password below</p>
-            </div>
-  
-            <div v-if="alert.show" class="alert alert-dismissible fade show" :class="`alert-${alert.type}`">
-              {{ alert.message }}
-              <button type="button" class="btn-close" @click="alert.show = false"></button>
-            </div>
-  
-            <form @submit.prevent="handleReset" class="needs-validation" :class="{ 'was-validated': validated }" novalidate>
-              <input type="hidden" v-model="email">
-              
-              <div class="mb-3 password-field">
-                <label for="password" class="form-label">New Password</label>
-                <div class="input-group">
-                  <input
-                    type="password"
-                    id="password"
-                    v-model="password"
-                    class="form-control"
-                    placeholder="Enter new password"
-                    required
-                    minlength="6"
-                    :class="{'is-invalid': validated && (!password || password.length < 6)}"
-                  >
-                </div>
-                <div class="invalid-feedback" v-if="validated && (!password || password.length < 6)">
-                  Password must be at least 6 characters
-                </div>
-              </div>
-  
-              <div class="mb-3 password-field">
-                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                <div class="input-group">
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    v-model="confirmPassword"
-                    class="form-control"
-                    placeholder="Confirm new password"
-                    required
-                    :class="{'is-invalid': validated && confirmPassword !== password}"
-                  >
-                </div>
-                <div class="invalid-feedback" v-if="validated && confirmPassword !== password">
-                  Passwords do not match
-                </div>
-              </div>
-  
-              <div class="divider my-4"></div>
-  
-              <button type="submit" class="continue-btn" :disabled="loading">
-                <span v-if="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                {{ loading ? 'Updating...' : 'Reset Password' }}
-              </button>
-            </form>
+  <div class="container-fluid login-container">
+    <div class="row g-0">
+      <!-- Reset Password Form Section -->
+      <div class="col-lg-6 login-form-section">
+        <div class="login-form-wrapper">
+          <div class="header">
+            <h1 class="title">Reset Password</h1>
+            <p class="instruction-text">Please enter your new password below</p>
           </div>
-        </div>
-  
-        <!-- Side Image Section -->
-        <div class="col-lg-6 login-side-section">
-          <div class="side-image-wrapper"></div>
+
+          <div
+            v-if="alert.show"
+            class="alert alert-dismissible fade show"
+            :class="`alert-${alert.type}`"
+          >
+            {{ alert.message }}
+            <button
+              type="button"
+              class="btn-close"
+              @click="alert.show = false"
+            ></button>
+          </div>
+
+          <form
+            @submit.prevent="handleReset"
+            class="needs-validation"
+            :class="{ 'was-validated': validated }"
+            novalidate
+          >
+            <input type="hidden" v-model="email" />
+
+            <div class="mb-3 password-field">
+              <label for="password" class="form-label">New Password</label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  id="password"
+                  v-model="password"
+                  class="form-control"
+                  placeholder="Enter new password"
+                  required
+                  minlength="6"
+                  :class="{
+                    'is-invalid':
+                      validated && (!password || password.length < 6),
+                  }"
+                />
+              </div>
+              <div
+                class="invalid-feedback"
+                v-if="validated && (!password || password.length < 6)"
+              >
+                Password must be at least 6 characters
+              </div>
+            </div>
+
+            <div class="mb-3 password-field">
+              <label for="confirmPassword" class="form-label"
+                >Confirm Password</label
+              >
+              <div class="input-group">
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  v-model="confirmPassword"
+                  class="form-control"
+                  placeholder="Confirm new password"
+                  required
+                  :class="{
+                    'is-invalid': validated && confirmPassword !== password,
+                  }"
+                />
+              </div>
+              <div
+                class="invalid-feedback"
+                v-if="validated && confirmPassword !== password"
+              >
+                Passwords do not match
+              </div>
+            </div>
+
+            <div class="divider my-4"></div>
+
+            <button type="submit" class="continue-btn" :disabled="loading">
+              <span
+                v-if="loading"
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              {{ loading ? "Updating..." : "Reset Password" }}
+            </button>
+          </form>
         </div>
       </div>
+
+      <!-- Side Image Section -->
+      <div class="col-lg-6 login-side-section">
+        <div class="side-image-wrapper"></div>
+      </div>
     </div>
-  </template>
-  
-  <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-import { useRoute, useRouter } from 'vue-router'
+  </div>
+</template>
 
-const route = useRoute()
-const router = useRouter()
+<script setup>
+import { ref, onMounted } from "vue";
+import axios from "axios";
+import { useRoute, useRouter } from "vue-router";
 
-const email = ref(route.query.email || '')
-const password = ref('')
-const confirmPassword = ref('')
-const token = ref('')
+const route = useRoute();
+const router = useRouter();
 
-const validated = ref(false)
-const loading = ref(false)
+const email = ref(route.query.email || "");
+const password = ref("");
+const confirmPassword = ref("");
+const token = ref("");
+
+const validated = ref(false);
+const loading = ref(false);
 
 const alert = ref({
   show: false,
-  type: 'danger',
-  message: ''
-})
+  type: "danger",
+  message: "",
+});
 
 const showAlert = (type, message) => {
-  alert.value = { show: true, type, message }
-  setTimeout(() => { alert.value.show = false }, 5000)
-}
+  alert.value = { show: true, type, message };
+  setTimeout(() => {
+    alert.value.show = false;
+  }, 5000);
+};
 onMounted(() => {
-  token.value = route.query.token || ''
-  email.value = route.query.email || ''
-})
+  token.value = route.query.token || "";
+  email.value = route.query.email || "";
+});
 
 const handleReset = async () => {
-  validated.value = true
-  loading.value = true
-  alert.value.show = false
+  validated.value = true;
+  loading.value = true;
+  alert.value.show = false;
 
   if (!password.value || password.value.length < 6) {
-    showAlert('danger', 'Password must be at least 6 characters')
-    loading.value = false
-    return
+    showAlert("danger", "Password must be at least 6 characters");
+    loading.value = false;
+    return;
   }
 
   if (password.value !== confirmPassword.value) {
-    showAlert('danger', 'Passwords do not match')
-    loading.value = false
-    return
+    showAlert("danger", "Passwords do not match");
+    loading.value = false;
+    return;
   }
 
   try {
-
-    await axios.post('http://localhost:8000/api/auth/password/reset', {
+    await axios.post("http://localhost:8000/api/auth/password/reset", {
       email: email.value,
       password: password.value,
       password_confirmation: confirmPassword.value,
+    });
 
-    })
-
-    showAlert('success', 'Password updated successfully! Redirecting to login...')
-    setTimeout(() => router.push('/login'), 2000)
-
+    showAlert(
+      "success",
+      "Password updated successfully! Redirecting to login..."
+    );
+    setTimeout(() => router.push("/login"), 2000);
   } catch (error) {
-    const msg = error.response?.data?.message || error.message || 'Failed to reset password. Please try again.'
-    showAlert('danger', msg)
-    console.error('Reset password error:', error)
+    const msg =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to reset password. Please try again.";
+    showAlert("danger", msg);
+    console.error("Reset password error:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-
-
+};
 </script>
 
 <style scoped>
-@import './style.css';
-
+@import "./style.css";
 </style>
