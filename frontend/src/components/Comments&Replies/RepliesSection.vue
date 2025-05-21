@@ -13,11 +13,11 @@
                     </div>
                     <p class="mb-2">{{ reply.content }}</p>
 
-                    <div v-if="reply.user_id === currentUser?.id" class="d-flex align-items-center gap-2">
-                        <button @click="$emit('edit-reply', reply)" class="btn btn-sm btn-outline-primary">
+                    <div v-show="reply.user_id == localUser?.id" class="d-flex align-items-center gap-2">
+                        <button @click="handleEdit(reply)" class="btn btn-sm btn-outline-primary">
                             Edit
                         </button>
-                        <button @click="$emit('delete-comment', reply.id)" class="btn btn-sm btn-outline-danger">
+                        <button @click="handleDelete(reply.id)" class="btn btn-sm btn-outline-danger">
                             Delete
                         </button>
                     </div>
@@ -40,11 +40,29 @@ export default {
             default: null
         }
     },
+    mounted() {
+        try {
+            const user = localStorage.getItem("user");
+            this.localUser = user ? JSON.parse(user) : { id: 1 };
+        } catch (e) {
+            this.localUser = { id: 1 };
+        }
+        console.log('Current User:', this.localUser.id);
+    },
     methods: {
         formatDate(dateString) {
             if (!dateString) return 'N/A';
             const options = { day: 'numeric', month: 'short', year: 'numeric' };
             return new Date(dateString).toLocaleDateString('en-US', options);
+        },
+        handleEdit(reply) {
+            const token = localStorage.getItem('auth_token');
+            this.$emit('edit-reply', reply);
+        },
+        handleDelete(replyId) {
+            const token = localStorage.getItem('auth_token');
+
+            this.$emit('delete-reply', replyId);
         }
     }
 }

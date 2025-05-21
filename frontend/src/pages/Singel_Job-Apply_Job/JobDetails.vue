@@ -1,7 +1,6 @@
 <template>
     <div class="job-details-page">
 
-
         <div class="breadcrumb-wrapper w-100 py-3 bg-light">
             <div class="container">
                 <nav aria-label="breadcrumb" class="breadcrumb-nav">
@@ -275,7 +274,15 @@ export default {
                 this.loading = false;
             }
         },
-
+        mounted() {
+            try {
+                const user = localStorage.getItem("user");
+                this.currentUser = user ? JSON.parse(user) : { id: 1 };
+            } catch (e) {
+                this.currentUser = { id: 1 };
+            }
+            console.log('Current User:', this.localUser.id);
+        },
         async checkAuth() {
             const token = localStorage.getItem('auth_token');
             if (token) {

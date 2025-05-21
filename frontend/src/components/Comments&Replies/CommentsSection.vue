@@ -51,12 +51,12 @@
                                         Reply
                                     </button>
 
-                                    <button v-if="comment.user_id === currentUser?.id" @click="editComment(comment)"
+                                    <button v-show="comment.user_id == currentUser?.id" @click="editComment(comment)"
                                         class="btn btn-sm btn-outline-primary">
                                         Edit
                                     </button>
 
-                                    <button v-if="comment.user_id === currentUser?.id"
+                                    <button v-show="comment.user_id == currentUser?.id"
                                         @click="deleteComment(comment.id)" class="btn btn-sm btn-outline-danger">
                                         Delete
                                     </button>
@@ -78,7 +78,7 @@
                                     </form>
                                 </div>
 
-                                <div v-if="editingComment === comment.id" class="mb-3">
+                                <div v-show="localUser?.id == comment.user_id" class="mb-3">
                                     <form @submit.prevent="updateComment(comment.id)">
                                         <div class="form-group">
                                             <textarea :value="editContent" @input="editContent = $event.target.value"
@@ -95,7 +95,7 @@
                                 </div>
 
                                 <RepliesSection :replies="comment.replies" :currentUser="currentUser"
-                                    @edit-reply="editReply" @delete-comment="deleteComment" />
+                                    @edit-reply="editReply" @delete-reply="deleteReply" />
                             </div>
                         </div>
                     </div>
@@ -121,7 +121,7 @@ export default {
         },
         currentUser: {
             type: Object,
-            default: null
+            // default: null
         },
         isAuthenticated: {
             type: Boolean,
@@ -137,11 +137,25 @@ export default {
             editingComment: null,
             editContent: '',
             loadingComments: false,
-            commentsError: null
+            commentsError: null,
+            localUser: {
+            }
+           
         }
     },
     created() {
         this.fetchComments();
+        // log the user in
+        // console .log(this.props.currentUser);
+    },
+    mounted() {
+        try {
+            const user = localStorage.getItem("user");
+            this.localUser = user ? JSON.parse(user) : { id: 1 };
+        } catch (e) {
+            this.localUser = { id: 1 };
+        }
+        console.log('Current User:', this.localUser.id);
     },
     methods: {
         formatDate(dateString) {
@@ -149,7 +163,8 @@ export default {
             const options = { day: 'numeric', month: 'short', year: 'numeric' };
             return new Date(dateString).toLocaleDateString('en-US', options);
         },
-
+        // mounted
+        
         async fetchComments() {
             this.loadingComments = true;
             this.commentsError = null;
@@ -233,7 +248,7 @@ export default {
                 const comment = this.findCommentById(commentId);
                 if (comment) {
                     comment.content = this.editContent;
-                    comment.is_edited = true;
+                    comment.updated_at = new Date().toISOString();
                 }
 
                 this.editingComment = null;
@@ -253,9 +268,9 @@ export default {
                     }
                 });
 
-                const index = this.comments.findIndex(c => c.id === commentId);
-                if (index !== -1) {
-                    this.comments.splice(index, 1);
+                const commentIndex = this.comments.findIndex(c => c.id === commentId);
+                if (commentIndex !== -1) {
+                    this.comments.splice(commentIndex, 1);
                 } else {
                     for (const comment of this.comments) {
                         const replyIndex = comment.replies.findIndex(r => r.id === commentId);
@@ -268,6 +283,10 @@ export default {
             } catch (error) {
                 console.error("Failed to delete comment", error);
             }
+        },
+
+        async deleteReply(replyId) {
+            await this.deleteComment(replyId);
         },
 
         toggleReply(commentId) {
