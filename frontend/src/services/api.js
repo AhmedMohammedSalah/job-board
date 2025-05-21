@@ -25,29 +25,29 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response) {
-      switch (error.response.status) {
-        case 401:
-          if (router.currentRoute.value.name !== "Login") {
-            // localStorage.removeItem("auth_token");
-            router.push({ name: "Login" });
-          }
-          break;
-        case 404:
-          router.push({ name: "NotFound" });
-          break;
-        case 500:
-          // Handle server errors
-          break;
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+// // Response interceptor
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response) {
+//       switch (error.response.status) {
+//         case 401:
+//           if (router.currentRoute.value.name !== "Login") {
+//             // localStorage.removeItem("auth_token");
+//             router.push({ name: "Login" });
+//           }
+//           break;
+//         case 404:
+//           router.push({ name: "NotFound" });
+//           break;
+//         case 500:
+//           // Handle server errors
+//           break;
+//       }
+//     }
+//     return Promise.reject(error);
+//   }
+// );
 
 // API endpoints
 export default {
@@ -88,5 +88,6 @@ export default {
       return api.get(`/favorite-jobs/check/${jobId}`);
     },
   },
+  
 };
 // const alljobs = await api.admin.getAlljobs()

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import api from "./api";
+import api from "./employer";
 
 export const useEmployerStore = defineStore("employer", {
   state: () => ({
