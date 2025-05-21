@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\api\SingleJobController;
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\CommentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -87,3 +88,11 @@ Route::get('/auth/get_current_user', [AuthController::class, 'get_current_user']
 // checkemail
 // http://localhost:8000/api/auth/checkemail
 Route::post('/auth/checkemail', [AuthController::class, 'checkemail']);
+
+//Marwa Nasser
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('jobs/{job}/comments', [CommentController::class, 'index']);
+    Route::post('comments', [CommentController::class, 'store']);
+    Route::put('comments/{comment}', [CommentController::class, 'update']);
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
+});
