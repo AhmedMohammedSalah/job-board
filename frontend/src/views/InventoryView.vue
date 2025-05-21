@@ -2,7 +2,7 @@
   <div class="app-layout">
     <Sidebar />
     <div class="main-content">
-      <div class="inventory-container">
+      <div class="Admin dashboard">
         <h1>Inventory Management</h1>
         <p>This is a clean inventory page with no data.</p>
       </div>

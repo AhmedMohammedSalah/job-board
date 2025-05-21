@@ -2,7 +2,7 @@
   <div class="sidebar">
     <div class="logo">
       <i class="fas fa-boxes"></i> 
-      <span>Inventory System</span>
+      <span>Admin dashboard</span>
     </div>
     <nav>
       <router-link to="/pending-jobs" class="nav-item">
