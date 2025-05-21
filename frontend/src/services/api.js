@@ -66,7 +66,7 @@ export default {
       return api.get("/candidate-skills");
     },
     addSkill(name) {
-      return api.post("/skills", { name });
+      return api.post("/skills", { name: name });
     },
     addCandidateSkill(skillId, level) {
       return api.post("/candidate-skills", { skillId, level });
@@ -79,14 +79,14 @@ export default {
       return api.post("/favorite-jobs", { job_id: jobId });
     },
     removeFavoriteJob(jobId) {
-      return api.delete( `/favorite-jobs/${jobId}`);
+      return api.delete(`/favorite-jobs/${jobId}`);
     },
     getFavoriteJobs() {
       return api.get("/favorite-jobs");
     },
     isFavoriteJob(jobId) {
       return api.get(`/favorite-jobs/check/${jobId}`);
-    }
+    },
   },
 };
 // const alljobs = await api.admin.getAlljobs()
