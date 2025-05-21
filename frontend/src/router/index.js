@@ -2,18 +2,18 @@ import { createRouter, createWebHistory } from "vue-router";
 
 // Import your views
 import Home from "../views/Home.vue";
-import candidateHomePage from "../views/candidateHome.vue"
+import candidateHomePage from "../views/candidateHome.vue";
 import Register from "../components/auth/Register.vue";
 import Login from "../components/auth/Login.vue";
 import Page from "../components/auth/page.vue";
 import ForgetPassword from "../components/auth/ForgetPassword.vue";
 import ResetPassword from "../components/auth/ResetPassword.vue";
-import PendingJobsView from '../views/PendingJobsView.vue'
-import inventory from "../views/InventoryView.vue"
+import PendingJobsView from "../views/PendingJobsView.vue";
+import inventory from "../views/InventoryView.vue";
 import JobDetails from "../pages/Singel_Job-Apply_Job/JobDetails.vue";
 import ApplyJob from "../pages/Singel_Job-Apply_Job/ApplyJob.vue";
 import ThankYouPage from "../pages/Singel_Job-Apply_Job/ThankYouPage.vue";
-
+import EmployersDashboard from "../components/employer/Dashboard.vue";
 import CandidateLayout from "../layouts/CandidateLayout.vue";
 import CandidateOverview from "../views/candidate/CandidateOverview.vue";
 import candidateSettings from "../views/candidate/CandidateSettings.vue";
@@ -54,33 +54,33 @@ const routes = [
         name: "candidateHomePage",
         component: candidateHomePage,
       },
-        {
-    path: "/pending-jobs",
-    name: "PendingJobs",
-    component: PendingJobsView,
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
+      {
+        path: "/pending-jobs",
+        name: "PendingJobs",
+        component: PendingJobsView,
+        meta: { requiresAuth: true, requiresAdmin: true },
+      },
 
-  {
-    path: "/job-details/:id",
-    name: "JobDetails",
-    component: JobDetails,
-    props: true,
-  },
-  {
-    path: "/apply",
-    name: "ApplyJob",
-    component: ApplyJob,
-    props: (route) => ({
-      jobId: route.query.jobId,
-      jobTitle: route.query.jobTitle,
-    }),
-  },
-  {
-    path: "/thank-you",
-    name: "ThankYouPage",
-    component: ThankYouPage,
-  },
+      {
+        path: "/job-details/:id",
+        name: "JobDetails",
+        component: JobDetails,
+        props: true,
+      },
+      {
+        path: "/apply",
+        name: "ApplyJob",
+        component: ApplyJob,
+        props: (route) => ({
+          jobId: route.query.jobId,
+          jobTitle: route.query.jobTitle,
+        }),
+      },
+      {
+        path: "/thank-you",
+        name: "ThankYouPage",
+        component: ThankYouPage,
+      },
     ],
   },
   {
@@ -108,13 +108,17 @@ const routes = [
     name: "ResetPassword",
     component: ResetPassword,
   },
-  // admin route 
+  // admin route
   {
     path: "/inventory",
     name: "inventory",
     component: inventory,
   },
-
+  {
+    path: "/EmployersDashboard",
+    name: "EmployersDashboard",
+    component: EmployersDashboard,
+  },
 ];
 
 const router = createRouter({
