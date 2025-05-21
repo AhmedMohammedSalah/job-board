@@ -2,49 +2,62 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCommentRequest;
-use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
+use App\Models\Job;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreCommentRequest;
 
 class CommentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index($jobId)
     {
-        //
+        $comments = Comment::with(['user', 'replies.user'])
+            ->where('job_id', $jobId)
+            ->whereNull('parent_id')
+            ->latest()
+            ->get();
+
+        return response()->json($comments);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreCommentRequest $request)
     {
-        //
+        $comment = Comment::create([
+            'content' => $request->content,
+            'user_id' => Auth::id(),
+            'job_id' => $request->job_id,
+            'parent_id' => $request->parent_id ?? null 
+        ]);
+
+        return response()->json($comment->load('user'));
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Comment $comment)
+    public function update(StoreCommentRequest $request, $id)
     {
-        //
+        $comment = Comment::findOrFail($id);
+
+        if ($comment->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $comment->update([
+            'content' => $request->content,
+            'is_edited' => true
+        ]);
+
+        return response()->json($comment->load('user'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCommentRequest $request, Comment $comment)
+    public function destroy($id)
     {
-        //
-    }
+        $comment = Comment::findOrFail($id);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Comment $comment)
-    {
-        //
+        if ($comment->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json(['message' => 'Comment deleted']);
     }
 }
