@@ -172,7 +172,7 @@ const handleLogin = async () => {
         if (response.data.user.role === "candidate") {
           router.push("/candidateHomePage");
         } else if (response.data.user.role === "employer") {
-          router.push("/empoloyer");
+          router.push("/EmployersDashboard");
         } else {
           router.push("/inventory");
         }
