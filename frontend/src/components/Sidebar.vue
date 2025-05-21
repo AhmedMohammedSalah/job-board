@@ -11,9 +11,9 @@
       </router-link>
       <router-link to="/job2" class="nav-item">
         <i class="fas fa-clipboard-list"></i>
-        <span>Active Jobs</span>
+        <span>Comments</span>
       </router-link>
-      <a href="#" class="nav-item logout" @click.prevent="logout">
+      <a href="#" class="nav-item logout" @click.prevent="logout()">
         <i class="fas fa-sign-out-alt"></i>
         <span>Logout</span>
       </a>
@@ -25,9 +25,25 @@
 export default {
   name: 'Sidebar',
   methods: {
-    logout() {
-      console.log('Logging out...');
+    
+  async logout ()  {
+  try {
+    await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+    if (token.value) {
+      await axios.post('http://localhost:8000/api/logout', {}, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      })
     }
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    this.router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    this.router.push('/login')
+  }
+}
   }
 }
 </script>

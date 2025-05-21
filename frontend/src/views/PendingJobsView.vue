@@ -120,6 +120,8 @@
 </template>
 
 <script>
+// import axios
+import axios from 'axios'
 export default {
   name: 'PendingJobsView',
   data() {
@@ -137,10 +139,10 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const token = localStorage.getItem('token')
+        const token = localStorage.getItem('auth_token')
         const response = await fetch(`http://127.0.0.1:8000/api/jobs/pending`, {
           headers: {
-            'Authorization': `Bearer 3|D89deqvk1bC1CndPXGdENF5zc2qvgwivOIzGx9NY21fa8985`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         })
@@ -213,9 +215,24 @@ export default {
         console.error('Error rejecting job:')
       }
     },
-    logout() {
-      console.log('Logging out...')
+     async logout ()  {
+  try {
+    await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+    if (token.value) {
+      await axios.post('http://localhost:8000/api/logout', {}, {
+        headers: { Authorization: `Bearer ${token.value}` }
+      })
     }
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    this.$router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    this.$router.push('/login')
+  }
+}
   }
 }
 </script>
