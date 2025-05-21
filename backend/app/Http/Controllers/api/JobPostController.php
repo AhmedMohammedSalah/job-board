@@ -94,36 +94,32 @@ class JobPostController extends Controller
 
     public function store(Request $request)
     {
-        $user = Auth::user();
-        if (!$user->employer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Only employers can post jobs'
-            ], 403);
-        }
+        // $user = Auth::user();
+        // if ($user->role!='employer') {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'Only employers can post jobs'
+        //     ], 403);
+        // }
+$validator = Validator::make($request->all(), [
+    'title' => 'required|string|max:255',
+    "slug" => 'ancient-history-research',
+    'description' => 'required|string',
+    'responsibilities' => 'nullable|string',
+    'requirements' => 'nullable|string', // Consistent with your Postman body
+    'benefits' => 'nullable|string',
+    'work_type' => 'required|in:remote,onsite,hybrid',
+    'location' => 'required|string|max:255',
+    'min_salary' => 'nullable|numeric',
+    'max_salary' => 'nullable|numeric',
+    'type' => 'required|in:full-time,part-time,contract,freelance',
+    'closing_date' => 'nullable|date',
+    'is_remote' => 'boolean',
+    'experience_level' => 'nullable|in:entry,mid,senior',
+    'category_id' => 'required',
+    'deadline' => 'nullable|date',
+]);
 
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'responsibilities' => 'nullable|string',
-            'requirements' => 'nullable|array',
-            'location' => 'required|string|max:255',
-            'requirements' => 'nullable|string',
-            'location' => 'required|string',
-            'salary' => 'nullable|numeric',
-            'salary_min' => 'nullable|numeric',
-            'salary_max' => 'nullable|numeric',
-            'type' => 'required|in:full-time,part-time,contract,freelance',
-            'employment_type' => 'required|string|max:100',
-            'work_type' => 'required|in:remote,onsite,hybrid',
-            'closing_date' => 'nullable|date',
-            'is_remote' => 'boolean',
-            'experience_level' => 'nullable|in:entry,mid,senior',
-            'benefits' => 'nullable|string',
-            'technologies' => 'nullable|array',
-            'category' => 'required|string|max:100',
-            'deadline' => 'nullable|date',
-        ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -131,12 +127,12 @@ class JobPostController extends Controller
 
         $user = Auth::user();
 
-        if (!$user->employer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Only employers can post jobs'
-            ], 403);
-        }
+        // if (!$user->employer) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'Only employers can post jobs'
+        //     ], 403);
+        // }
 
         // Calculate expiration date
         $expiresAt = $request->closing_date
@@ -144,10 +140,8 @@ class JobPostController extends Controller
             : Carbon::now()->addDays(30);
 
         $job = new Job($validator->validated());
-        $job->employer_id = $user->employer->id;
+        $job->employer_id = '1';
         $job->status = 'published';
-        $job->is_active = true;
-        $job->expires_at = $expiresAt;
         $job->save();
 
         return response()->json([

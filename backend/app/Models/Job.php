@@ -8,28 +8,24 @@ use Illuminate\Database\Eloquent\Model;
 class Job extends Model
 {
     use HasFactory;
-
     protected $fillable = [
-        'employer_id',
-        'title',
-        'description',
-        'responsibilities',
-        'requirements',
-        'category',
-        'benefits',
-        'work_type',
-        'work_type', // 'remote', 'onsite', 'hybrid'
-        'location',
-        'technologies',
-        'work_type',
-        'employment_type',
-        'salary_min',
-        'salary_max',
-        'benefits',
-        'deadline',
-        'is_active',
-        'expires_at',
-    ];
+    'employer_id',
+    'category_id',
+    'title',
+    'slug',
+    'description',
+    'responsibilities',
+    'requirements',
+    'benefits',
+    'work_type',      // remote, onsite, hybrid
+    'location',
+    'min_salary',
+    'max_salary',
+    'deadline',
+    'status',
+];
+
+
 
     protected $casts = [
         'technologies' => 'array',

@@ -70,7 +70,7 @@ Route::get('/jobs/filter', [JobController::class, 'filterJobs']);
 Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
 
         Route::get('/jobs', [JobPostController::class, 'index']);
-        Route::post('/jobs', [JobPostController::class, 'store']);
+        Route::post('/addjobs', [JobPostController::class, 'store']);
         Route::get('/jobs/{id}', [JobPostController::class, 'show']);
         Route::put('/jobs/{id}', [JobPostController::class, 'update']);
         Route::delete('/jobs/{id}', [JobPostController::class, 'destroy']);
