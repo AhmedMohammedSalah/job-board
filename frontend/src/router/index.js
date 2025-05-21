@@ -18,7 +18,8 @@ import CandidateLayout from "../layouts/CandidateLayout.vue";
 import CandidateOverview from "../views/candidate/CandidateOverview.vue";
 import candidateSettings from "../views/candidate/CandidateSettings.vue";
 import RecentlyApplied from "../components/candidate/RecentlyApplied.vue";
-
+import Myjobs from "../components/employer/MyJobs.vue";
+import PostJob from "../components/employer/PostJob.vue";
 const routes = [
   {
     path: "/",
@@ -118,6 +119,16 @@ const routes = [
     path: "/EmployersDashboard",
     name: "EmployersDashboard",
     component: EmployersDashboard,
+  },
+  {
+    path: "/MyJobs",
+    name: "MyJobs",
+    component: Myjobs,
+  },
+  {
+    path: "/PostJob",
+    name: "PostJob",
+    component: PostJob,
   },
 ];
 

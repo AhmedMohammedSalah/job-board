@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import axios from "axios";
+import api from "./api";
 
 export const useEmployerStore = defineStore("employer", {
   state: () => ({
@@ -21,11 +21,11 @@ export const useEmployerStore = defineStore("employer", {
         this.error = null;
 
         const [jobsResponse, userResponse] = await Promise.all([
-          axios.get("/api/jobs"),
-          axios.get("/api/auth/user"),
+          api.get("/jobs"),
+          api.get("/auth/user"),
         ]);
 
-        if (!jobsResponse.data || !Array.isArray(jobsResponse.data)) {
+        if (!Array.isArray(jobsResponse.data)) {
           throw new Error("Invalid jobs data format received from server");
         }
 
@@ -39,6 +39,7 @@ export const useEmployerStore = defineStore("employer", {
           status: job.is_active ? "Active" : "Expired",
           applications_count: job.applications_count || 0,
           applicants: [],
+          is_active: job.is_active,
         }));
 
         this.stats = {
@@ -58,7 +59,7 @@ export const useEmployerStore = defineStore("employer", {
 
     async fetchJobApplicants(jobId) {
       try {
-        const response = await axios.get(`/api/jobs/${jobId}/applications`);
+        const response = await api.get(`/jobs/${jobId}/applications`);
 
         if (!Array.isArray(response.data)) {
           console.warn("Expected array of applicants but got:", response.data);
@@ -78,13 +79,12 @@ export const useEmployerStore = defineStore("employer", {
 
     async toggleJobStatus(jobId) {
       try {
-        await axios.patch(`/api/jobs/${jobId}/toggle-active`);
+        await api.patch(`/jobs/${jobId}/toggle-active`);
 
         const job = this.jobs.find((j) => j.id === jobId);
         if (job) {
           job.is_active = !job.is_active;
           job.status = job.is_active ? "Active" : "Expired";
-          // Update open jobs count
           this.stats.openJobs = this.jobs.filter(
             (j) => j.status === "Active"
           ).length;
@@ -125,8 +125,7 @@ export const useEmployerStore = defineStore("employer", {
       const diffTime = expiry - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays <= 0) return "Expired";
-      return `${diffDays} days remaining`;
+      return diffDays <= 0 ? "Expired" : `${diffDays} days remaining`;
     },
 
     setSelectedJob(jobId) {
@@ -141,7 +140,7 @@ export const useEmployerStore = defineStore("employer", {
   getters: {
     recentJobs: (state) => state.jobs,
     selectedJobDetails: (state) => {
-      return state.jobs.find((job) => job.id === state.selectedJob);
+      return state.jobs.find((job) => job.id === state.selectedJob) || null;
     },
   },
 });

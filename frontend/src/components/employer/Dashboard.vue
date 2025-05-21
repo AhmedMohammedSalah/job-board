@@ -21,7 +21,8 @@
 
         <div v-if="!employerStore.isLoading && !employerStore.error">
           <div class="page-header">
-            <h1>Hello, {{ user.name || "Employer" }}</h1>
+            <h1>Hello, {{ user?.name || "Employer" }}</h1>
+
             <p>Here is your daily activities and applications</p>
           </div>
 
