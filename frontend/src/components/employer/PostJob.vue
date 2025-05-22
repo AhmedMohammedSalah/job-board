@@ -276,7 +276,7 @@ const fetchCategories = async () => {
   error.value = null;
 
   try {
-    const response = await axiosInstance.get("/categories");
+    const response = await axiosInstance.get("http://localhost:8000/api/categories");
     console.log("Categories response:", response.data);
     categories.value = response.data.data || [];
   } catch (err) {

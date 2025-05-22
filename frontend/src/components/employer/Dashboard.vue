@@ -285,7 +285,7 @@ const fetchDashboardData = async () => {
   error.value = null;
 
   try {
-    const response = await axiosInstance.get("/jobs");
+    const response = await axiosInstance.get(`http://localhost:8000/api/jobs`);
     console.log("Jobs response:", response.data);
     jobs.value = response.data.data || [];
 
@@ -323,7 +323,9 @@ const showApplications = async (jobId) => {
   showApplicationsPanel.value = true;
 
   try {
-    const response = await axiosInstance.get(`/jobs/${jobId}/applications`);
+    const response = await axiosInstance.get(
+      `http://localhost:8000/api/jobs/${jobId}/applications`
+    );
     console.log("Applications response:", response.data);
     const job = jobs.value.find((j) => j.id === jobId);
     selectedJobDetails.value = {
