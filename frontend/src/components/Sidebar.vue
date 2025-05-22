@@ -9,9 +9,9 @@
         <i class="fas fa-clock"></i>
         <span>Pending Jobs</span>
       </router-link>
-      <router-link to="/job2" class="nav-item">
+      <router-link to="/adminComments" class="nav-item">
         <i class="fas fa-clipboard-list"></i>
-        <span>Comments</span>
+        <span>Comments management</span>
       </router-link>
       <a href="#" class="nav-item logout" @click.prevent="logout()">
         <i class="fas fa-sign-out-alt"></i>

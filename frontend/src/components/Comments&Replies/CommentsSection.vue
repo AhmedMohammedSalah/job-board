@@ -1,20 +1,22 @@
 <template>
     <div class="comments-section mt-5">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h4 class="mb-0 fw-bold">Comments</h4>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h4 class="mb-0 fw-bold text-primary">Comments</h4>
             </div>
             <div class="card-body">
                 <div class="mb-4">
                     <form @submit.prevent="addComment" v-if="isAuthenticated">
-                        <div class="form-group">
+                        <div class="form-group mb-2">
                             <textarea v-model="newComment" class="form-control" rows="3" placeholder="Add a comment..."
                                 required></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-2">Post Comment</button>
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
                     </form>
-                    <div v-else class="alert alert-info">
-                        Please <router-link :to="{ name: 'Login' }">login</router-link> to post a comment.
+                    <div v-else class="alert alert-info border-0 shadow-sm">
+                        Please
+                        <router-link :to="{ name: 'Login' }" class="alert-link">login</router-link>
+                        to post a comment.
                     </div>
                 </div>
 
@@ -24,7 +26,7 @@
                     </div>
                 </div>
 
-                <div v-else-if="commentsError" class="alert alert-danger">
+                <div v-else-if="commentsError" class="alert alert-danger border-0 shadow-sm">
                     {{ commentsError }}
                 </div>
 
@@ -33,7 +35,8 @@
                         No comments yet. Be the first to comment!
                     </div>
 
-                    <div v-for="comment in comments" :key="comment.id" class="comment mb-4">
+                    <div v-for="comment in comments" :key="comment?.id"
+                        class="comment mb-4 p-3 rounded bg-light shadow-sm">
                         <div class="d-flex">
                             <div class="flex-shrink-0 me-3">
                                 <img :src="comment.user.avatar || '/images/default-avatar.png'" class="rounded-circle"
@@ -51,20 +54,20 @@
                                         Reply
                                     </button>
 
-                                    <button v-show="comment.user_id == currentUser?.id" @click="editComment(comment)"
+                                    <button v-show="canEditOrDelete(comment)" @click="editComment(comment)"
                                         class="btn btn-sm btn-outline-primary">
                                         Edit
                                     </button>
 
-                                    <button v-show="comment.user_id == currentUser?.id"
-                                        @click="deleteComment(comment.id)" class="btn btn-sm btn-outline-danger">
+                                    <button v-show="canEditOrDelete(comment)" @click="deleteComment(comment.id)"
+                                        class="btn btn-sm btn-outline-danger">
                                         Delete
                                     </button>
                                 </div>
 
-                                <div v-if="activeReply === comment.id" class="mb-3">
+                                <div v-show="activeReply === comment.id" class="mb-3 p-3 bg-white rounded shadow-sm">
                                     <form @submit.prevent="addReply(comment.id)">
-                                        <div class="form-group">
+                                        <div class="form-group mb-2">
                                             <textarea v-model="replyContent" class="form-control" rows="2"
                                                 placeholder="Write a reply..." required></textarea>
                                         </div>
@@ -78,11 +81,11 @@
                                     </form>
                                 </div>
 
-                                <div v-show="localUser?.id == comment.user_id" class="mb-3">
-                                    <form @submit.prevent="updateComment(comment.id)">
-                                        <div class="form-group">
-                                            <textarea :value="editContent" @input="editContent = $event.target.value"
-                                                class="form-control" rows="3" required></textarea>
+                                <div v-show="editingComment === comment.id" class="mb-3 p-3 bg-white rounded shadow-sm">
+                                    <form @submit.prevent="updateComment(comment.id, editContent)">
+                                        <div class="form-group mb-2">
+                                            <textarea v-model="editContent" class="form-control" rows="3"
+                                                required></textarea>
                                         </div>
                                         <div class="d-flex gap-2 mt-2">
                                             <button type="submit" class="btn btn-primary btn-sm">Update</button>
@@ -94,13 +97,23 @@
                                     </form>
                                 </div>
 
-                                <RepliesSection :replies="comment.replies" :currentUser="currentUser"
-                                    @edit-reply="editReply" @delete-reply="deleteReply" />
+                                <RepliesSection :replies="comment.replies" :localUser="localUser"
+                                    @edit-reply="editReply" @delete-reply="deleteReply"
+                                    :editingCommentId="editingComment" @update-reply="handleUpdateReply" />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+        <div v-if="successMessage" class="alert alert-success mt-3 animated-alert">
+            {{ successMessage }}
+        </div>
+        <div v-if="errorMessage" class="alert alert-danger mt-3 animated-alert">
+            {{ errorMessage }}
+        </div>
+        <div v-if="infoMessage" class="alert alert-info mt-3 animated-alert">
+            {{ infoMessage }}
         </div>
     </div>
 </template>
@@ -119,10 +132,6 @@ export default {
             type: [String, Number],
             required: true
         },
-        currentUser: {
-            type: Object,
-            // default: null
-        },
         isAuthenticated: {
             type: Boolean,
             default: false
@@ -138,49 +147,65 @@ export default {
             editContent: '',
             loadingComments: false,
             commentsError: null,
-            localUser: {
-            }
-           
+            localUser: null,
+            successMessage: '',
+            errorMessage: '',
+            infoMessage: ''
         }
     },
     created() {
+        this.loadLocalUser();
         this.fetchComments();
-        // log the user in
-        // console .log(this.props.currentUser);
-    },
-    mounted() {
-        try {
-            const user = localStorage.getItem("user");
-            this.localUser = user ? JSON.parse(user) : { id: 1 };
-        } catch (e) {
-            this.localUser = { id: 1 };
-        }
-        console.log('Current User:', this.localUser.id);
     },
     methods: {
-        formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const options = { day: 'numeric', month: 'short', year: 'numeric' };
-            return new Date(dateString).toLocaleDateString('en-US', options);
-        },
-        // mounted
-        
-        async fetchComments() {
-            this.loadingComments = true;
-            this.commentsError = null;
+        loadLocalUser() {
             try {
-                const response = await axios.get(`http://127.0.0.1:8000/api/jobs/${this.jobId}/comments`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-                    }
-                });
-                this.comments = response.data;
-            } catch (error) {
-                this.commentsError = error.response?.data?.message || "Failed to load comments";
-            } finally {
-                this.loadingComments = false;
+                const user = localStorage.getItem("user");
+                if (user) {
+                    this.localUser = JSON.parse(user);
+                } else {
+                    this.localUser = null;
+                }
+            } catch (e) {
+                this.localUser = null;
             }
         },
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        },
+
+        canEditOrDelete(comment) {
+            const currentUserId = this.localUser ? Number(this.localUser.id) : null;
+            const commentUserId = comment.user_id ? Number(comment.user_id) : null;
+            return this.isAuthenticated && currentUserId !== null && commentUserId === currentUserId;
+        },
+
+        async fetchComments() {
+    this.loadingComments = true;
+    this.commentsError = null;
+    try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/jobs/${this.jobId}/comments`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            }
+        });
+        
+        // Ensure comments have replies array and proper structure
+        this.comments = response.data.map(comment => ({
+            ...comment,
+            replies: comment.replies || [],
+            user: comment.user || { id: null, name: 'Unknown', avatar: null }
+        }));
+        
+    } catch (error) {
+        this.commentsError = error.response?.data?.message || "Failed to load comments";
+        console.error("Error loading comments:", error);
+    } finally {
+        this.loadingComments = false;
+    }
+                },
 
         async addComment() {
             try {
@@ -193,11 +218,15 @@ export default {
                     }
                 });
 
-                this.comments.unshift(response.data.comment);
+                // Instead of unshifting directly, refresh the comments
+                await this.fetchComments();
                 this.newComment = '';
+                this.showNotification('Comment posted successfully!', 'success');
             } catch (error) {
-                console.error("Failed to add comment", error);
-                this.$emit('auth-failed');
+                this.showNotification(error.response?.data?.message || "Failed to post comment", 'danger');
+                if (error.response?.status === 401) {
+                    this.$emit('auth-failed');
+                }
             }
         },
 
@@ -215,30 +244,43 @@ export default {
 
                 const parentComment = this.comments.find(c => c.id === commentId);
                 if (parentComment) {
+                    if (!parentComment.replies) {
+                        parentComment.replies = [];
+                    }
                     parentComment.replies.push(response.data.comment);
                 }
 
                 this.replyContent = '';
                 this.activeReply = null;
+                this.showNotification('Reply posted successfully!', 'success');
             } catch (error) {
-                console.error("Failed to add reply", error);
+                this.showNotification(error.response?.data?.message || "Failed to post reply", 'danger');
+                if (error.response?.status === 401) {
+                    this.$emit('auth-failed');
+                }
             }
         },
 
         editComment(comment) {
+            if (!this.canEditOrDelete(comment)) {
+                this.showNotification('You are not authorized to edit this comment.', 'info');
+                return;
+            }
             this.editingComment = comment.id;
             this.editContent = comment.content;
+            this.activeReply = null;
         },
 
         editReply(reply) {
             this.editingComment = reply.id;
             this.editContent = reply.content;
+            this.activeReply = null;
         },
 
-        async updateComment(commentId) {
+        async updateComment(commentId, newContent) {
             try {
                 await axios.put(`http://127.0.0.1:8000/api/comments/${commentId}`, {
-                    content: this.editContent
+                    content: newContent
                 }, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -247,20 +289,26 @@ export default {
 
                 const comment = this.findCommentById(commentId);
                 if (comment) {
-                    comment.content = this.editContent;
+                    comment.content = newContent;
                     comment.updated_at = new Date().toISOString();
                 }
 
                 this.editingComment = null;
                 this.editContent = '';
+                this.showNotification('Updated successfully!', 'success');
             } catch (error) {
-                console.error("Failed to update comment", error);
+                this.showNotification(error.response?.data?.message || "Failed to update", 'danger');
+                if (error.response?.status === 401) {
+                    this.$emit('auth-failed');
+                }
             }
         },
 
-        async deleteComment(commentId) {
-            if (!confirm('Are you sure you want to delete this comment?')) return;
+        handleUpdateReply(replyId, newContent) {
+            this.updateComment(replyId, newContent);
+        },
 
+        async deleteComment(commentId) {
             try {
                 await axios.delete(`http://127.0.0.1:8000/api/comments/${commentId}`, {
                     headers: {
@@ -280,7 +328,9 @@ export default {
                         }
                     }
                 }
+                this.showNotification('Deleted successfully!', 'success');
             } catch (error) {
+                this.showNotification(error.response?.data?.message || "Failed to deleted", 'danger');
                 console.error("Failed to delete comment", error);
             }
         },
@@ -291,6 +341,7 @@ export default {
 
         toggleReply(commentId) {
             if (!this.isAuthenticated) {
+                this.showNotification('Please login to post a reply.', 'info');
                 return;
             }
             this.activeReply = this.activeReply === commentId ? null : commentId;
@@ -303,11 +354,31 @@ export default {
             if (comment) return comment;
 
             for (const c of this.comments) {
-                const reply = c.replies.find(r => r.id === id);
-                if (reply) return reply;
+                if (c.replies) {
+                    const reply = c.replies.find(r => r.id === id);
+                    if (reply) return reply;
+                }
+            }
+            return null;
+        },
+        showNotification(message, type) {
+            this.successMessage = '';
+            this.errorMessage = '';
+            this.infoMessage = '';
+
+            if (type === 'success') {
+                this.successMessage = message;
+            } else if (type === 'danger') {
+                this.errorMessage = message;
+            } else if (type === 'info') {
+                this.infoMessage = message;
             }
 
-            return null;
+            setTimeout(() => {
+                this.successMessage = '';
+                this.errorMessage = '';
+                this.infoMessage = '';
+            }, 3000);
         }
     }
 }
@@ -320,17 +391,46 @@ export default {
 }
 
 .comment {
-    padding: 1rem;
-    border-radius: 8px;
-    background-color: #f9f9f9;
+    transition: all 0.3s ease-in-out;
 }
 
-.comment-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
+.comment:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
 }
 
-.comment:hover .comment-actions {
-    opacity: 1;
+.animated-alert {
+    animation: fadeInOut 3s forwards;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 250px;
+    text-align: center;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
 }
 </style>

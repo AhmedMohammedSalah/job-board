@@ -1,22 +1,41 @@
 <template>
     <div class="job-details-page">
+        <AppHeader class="header" />
+        <Navbar />
 
-        <div class="breadcrumb-wrapper w-100 py-3 bg-light">
+        <div class="breadcrumb-full-width bg-light py-3">
             <div class="container">
-                <nav aria-label="breadcrumb" class="breadcrumb-nav">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item">
-                            <RouterLink :to="{ name: 'Home' }" class="text-decoration-none">Home</RouterLink>
-                        </li>
-                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Find Job</a></li>
-                        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Graphics & Design</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Job Details</li>
-                    </ol>
-                </nav>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="breadcrumb-title fw-bold">
+                        Job Details
+                    </div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <RouterLink :to="{ name: 'candidateHomePage' }" class="text-decoration-none">Home
+                                </RouterLink>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <RouterLink :to="{ name: 'candidate-overview' }" class="text-decoration-none">OverView
+                                </RouterLink>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <RouterLink :to="{ name: 'JobDetails' }" class="text-decoration-none">{{ job.title }}
+                                </RouterLink>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                <RouterLink :to="{ name: 'JobDetails' }" class="text-decoration-none">Job Details
+                                </RouterLink>
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
             </div>
         </div>
 
-        <div class="container">
+        <!-- Main content container -->
+        <div class="container main-content-container py-4">
+            <!-- Loading/Error states -->
             <div v-if="loading" class="d-flex justify-content-center align-items-center vh-100">
                 <div class="text-center">
                     <div class="spinner-border text-primary" role="status">
@@ -27,8 +46,7 @@
             </div>
 
             <div v-else-if="error" class="d-flex justify-content-center align-items-center vh-100">
-                <div class="alert alert-danger d-flex align-items-center gap-3 shadow rounded-4 p-4" role="alert"
-                    style="max-width: 500px;">
+                <div class="alert alert-danger d-flex align-items-center gap-3 shadow rounded-4 p-4" role="alert">
                     <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="fs-3" />
                     <div class="flex-grow-1 fs-6">
                         {{ error }}
@@ -36,14 +54,15 @@
                 </div>
             </div>
 
-            <div v-else class="content p-4">
+            <!-- Job content -->
+            <div v-else>
                 <div class="job-header d-flex justify-content-between align-items-center mb-4">
                     <div class="d-flex align-items-center">
                         <div class="company-logo rounded-circle me-3 d-flex align-items-center justify-content-center">
                             <font-awesome-icon :icon="['fas', 'building']" class="text-muted fs-4" />
                         </div>
                         <div>
-                            <h5 class="mb-1 fw-bold">{{ job.title }}</h5>
+                            <h1 class="mb-1 fw-bold">{{ job.title }}</h1>
                             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
                                 <span class="badge bg-success">{{ job.work_type }}</span>
                                 <span class="badge bg-warning text-dark">Featured</span>
@@ -60,6 +79,7 @@
                 </div>
 
                 <div class="row g-4">
+                    <!-- Job details column -->
                     <div class="col-lg-7">
                         <div class="job-content">
                             <div class="mb-5">
@@ -77,11 +97,12 @@
                         </div>
                     </div>
 
+                    <!-- Job summary column -->
                     <div class="col-lg-5">
                         <div class="job-summary-card card shadow-sm position-relative">
                             <div class="position-absolute top-0 end-0 m-3">
                                 <span class="badge bg-primary text-light">
-                                    <i class="bi bi-globe me-1"></i>
+                                    <font-awesome-icon :icon="['fas', 'globe']" class="me-1" />
                                     {{ job.work_type === 'remote' ? 'Remote' : 'On-site' }}
                                 </span>
                             </div>
@@ -151,7 +172,6 @@
                                             <font-awesome-icon :icon="['fas', 'link']" />
                                             Copy Link
                                         </button>
-
                                         <a :href="linkedInUrl" target="_blank" rel="noopener"
                                             class="btn btn-outline-primary d-flex align-items-center justify-content-center p-2"
                                             style="width: 38px; height: 38px;">
@@ -200,6 +220,7 @@
                     @auth-failed="handleAuthFailed" />
             </div>
         </div>
+
         <AppFooter />
     </div>
 </template>
@@ -281,7 +302,6 @@ export default {
             } catch (e) {
                 this.currentUser = { id: 1 };
             }
-            console.log('Current User:', this.localUser.id);
         },
         async checkAuth() {
             const token = localStorage.getItem('auth_token');
@@ -300,18 +320,15 @@ export default {
                 }
             }
         },
-
         formatDate(dateString) {
             if (!dateString) return 'N/A';
             const options = { day: 'numeric', month: 'short', year: 'numeric' };
             return new Date(dateString).toLocaleDateString('en-US', options);
         },
-
         formatText(text) {
             if (!text) return '';
             return text.replace(/\n/g, '<br>');
         },
-
         copyLink() {
             const url = window.location.href;
             navigator.clipboard.writeText(url).then(() => {
@@ -323,7 +340,6 @@ export default {
                 console.error("Failed to copy: ", err);
             });
         },
-
         handleAuthFailed() {
             this.isAuthenticated = false;
             localStorage.removeItem('auth_token');
@@ -336,12 +352,22 @@ export default {
 .job-details-page {
     background-color: white;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.header,
-.breadcrumb-wrapper {
+.header {
     background-color: #eeeeee;
-    border-radius: 0 0 8px 8px;
+}
+
+.breadcrumb-full-width {
+    width: 100%;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.breadcrumb-title {
+    font-size: 1.25rem;
+    color: #334155;
 }
 
 .breadcrumb-item a {
@@ -360,42 +386,71 @@ export default {
 }
 
 .breadcrumb-item+.breadcrumb-item::before {
-    content: "›";
+    content: "/";
     padding: 0 8px;
     color: #94a3b8;
 }
 
+.main-content-container {
+    flex: 1;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
 .job-header {
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .company-logo {
     width: 80px;
     height: 80px;
+    background-color: #f8f9fa;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.card {
+.job-summary-card {
     border-radius: 12px;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.card:hover {
+.job-summary-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
 }
 
-.badge {
-    font-weight: 500;
-    letter-spacing: 0.3px;
+.section-title {
+    color: #3b82f6;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background-color: #3b82f6;
+}
+
+.description-text,
+.requirements-list,
+.benefits-list {
+    line-height: 1.8;
+    color: #475569;
 }
 
 .btn-primary {
     background-color: #3b82f6;
     border-color: #3b82f6;
     transition: all 0.3s;
+    padding: 0.75rem 1.5rem;
 }
 
 .btn-primary:hover {
@@ -418,19 +473,25 @@ export default {
 }
 
 @media (max-width: 768px) {
-    .job-title {
-        font-size: 1.5rem;
-    }
-
-    .company-logo {
-        width: 60px;
-        height: 60px;
-    }
-
     .job-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1.5rem;
+    }
+
+    .apply-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .breadcrumb-full-width .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .breadcrumb-title {
+        margin-bottom: 0.5rem;
     }
 }
 
@@ -439,8 +500,9 @@ export default {
         font-size: 0.85rem;
     }
 
-    .job-title {
-        font-size: 1.3rem;
+    .company-logo {
+        width: 60px;
+        height: 60px;
     }
 }
 </style>

@@ -7,6 +7,29 @@
         <span class="logo-text">JobPilot</span>
         <div class="logo-badge">Pro</div>
       </router-link>
+       <div class="nav-links">
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+        <div class="nav-link"></div>
+       </div>
+
+      
 
       <!-- User Actions -->
       <div class="user-actions">
@@ -30,10 +53,10 @@
         </button>
 
         <div v-if="isLoggedIn" class="user-profile">
-          <button class="icon-btn notification-btn">
+          <!-- <button class="icon-btn notification-btn">
             <BellAlertIcon class="icon" />
             <span class="notification-badge">3</span>
-          </button>
+          </button> -->
 
           <div class="user-avatar">
             <UserCircleIcon class="avatar-icon" />

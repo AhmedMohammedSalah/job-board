@@ -13,13 +13,28 @@
                     </div>
                     <p class="mb-2">{{ reply.content }}</p>
 
-                    <div v-show="reply.user_id == localUser?.id" class="d-flex align-items-center gap-2">
+                    <div v-show="canEditOrDeleteReply(reply) && editingCommentId !== reply.id"
+                        class="d-flex align-items-center gap-2">
                         <button @click="handleEdit(reply)" class="btn btn-sm btn-outline-primary">
                             Edit
                         </button>
                         <button @click="handleDelete(reply.id)" class="btn btn-sm btn-outline-danger">
                             Delete
                         </button>
+                    </div>
+
+                    <div v-if="editingCommentId === reply.id" class="mb-3 p-3 bg-white rounded shadow-sm">
+                        <form @submit.prevent="updateReply(reply.id)">
+                            <div class="form-group mb-2">
+                                <textarea v-model="editContentLocal" class="form-control" rows="2" required></textarea>
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                                <button @click="cancelEdit" type="button" class="btn btn-outline-secondary btn-sm">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -35,34 +50,54 @@ export default {
             type: Array,
             default: () => []
         },
-        currentUser: {
+        localUser: {
             type: Object,
+            default: null
+        },
+        editingCommentId: {
+            type: [Number, String],
             default: null
         }
     },
-    mounted() {
-        try {
-            const user = localStorage.getItem("user");
-            this.localUser = user ? JSON.parse(user) : { id: 1 };
-        } catch (e) {
-            this.localUser = { id: 1 };
+    data() {
+        return {
+            editContentLocal: ''
+        };
+    },
+    watch: {
+        editingCommentId(newVal) {
+            if (newVal) {
+                const replyToEdit = this.replies.find(r => r.id === newVal);
+                if (replyToEdit) {
+                    this.editContentLocal = replyToEdit.content;
+                }
+            } else {
+                this.editContentLocal = '';
+            }
         }
-        console.log('Current User:', this.localUser.id);
     },
     methods: {
         formatDate(dateString) {
             if (!dateString) return 'N/A';
-            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
             return new Date(dateString).toLocaleDateString('en-US', options);
         },
+        canEditOrDeleteReply(reply) {
+            const currentUserId = this.localUser ? Number(this.localUser.id) : null;
+            const replyUserId = reply.user_id ? Number(reply.user_id) : null;
+            return currentUserId !== null && replyUserId === currentUserId;
+        },
         handleEdit(reply) {
-            const token = localStorage.getItem('auth_token');
             this.$emit('edit-reply', reply);
         },
         handleDelete(replyId) {
-            const token = localStorage.getItem('auth_token');
-
             this.$emit('delete-reply', replyId);
+        },
+        updateReply(replyId) {
+            this.$emit('update-reply', replyId, this.editContentLocal);
+        },
+        cancelEdit() {
+            this.$emit('edit-reply', null);
         }
     }
 }
@@ -70,7 +105,7 @@ export default {
 
 <style scoped>
 .replies {
-    border-left: 2px solid #eee;
+    border-left: 2px solid #ccc;
     padding-left: 1rem;
 }
 </style>
