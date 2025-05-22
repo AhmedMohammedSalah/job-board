@@ -31,7 +31,6 @@ export default {
   name: "SidebarComponent",
 
   props: {
-    // Optional initial active item index
     initialActive: {
       type: Number,
       default: 0,
@@ -44,59 +43,25 @@ export default {
         label: "Overview",
         icon: "bi-grid",
         isActive: props.initialActive === 0,
-        route: "overview",
+        route: "EmployerDashboard",
       },
-      {
-        label: "Employers Profile",
-        icon: "bi-person",
-        isActive: props.initialActive === 1,
-        route: "profile",
-      },
+
       {
         label: "Post a Job",
         icon: "bi-plus-square",
         isActive: props.initialActive === 2,
-        route: "post-job",
+        route: "Postjob",
       },
       {
         label: "My Jobs",
         icon: "bi-briefcase",
         isActive: props.initialActive === 3,
-        route: "my-jobs",
-      },
-      {
-        label: "Saved Candidate",
-        icon: "bi-bookmark",
-        isActive: props.initialActive === 4,
-        route: "saved-candidates",
-      },
-      {
-        label: "Plans & Billing",
-        icon: "bi-file-text",
-        isActive: props.initialActive === 5,
-        route: "plans-billing",
-      },
-      {
-        label: "All Companies",
-        icon: "bi-building",
-        isActive: props.initialActive === 6,
-        route: "companies",
-      },
-      {
-        label: "Settings",
-        icon: "bi-gear",
-        isActive: props.initialActive === 7,
-        route: "settings",
+        route: "MyJobs",
       },
     ]);
-
     const selectItem = (index) => {
-      // Set all items to inactive
       navItems.value.forEach((item) => (item.isActive = false));
-      // Set selected item to active
       navItems.value[index].isActive = true;
-
-      // Emit the navigation event with route name
       emit("navigate", navItems.value[index].route);
     };
 
