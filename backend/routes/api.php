@@ -70,11 +70,11 @@ Route::post('/auth/password/reset', [AuthController::class, 'reset']);
 Route::get('/jobs/filter', [JobController::class, 'filterJobs']);
 Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
 
-        Route::get('/jobs', [JobPostController::class, 'index']);
-        Route::post('/addjobs', [JobPostController::class, 'store']);
-        Route::get('/jobs/{id}', [JobPostController::class, 'show']);
-        Route::put('/jobs/{id}', [JobPostController::class, 'update']);
-        Route::delete('/jobs/{id}', [JobPostController::class, 'destroy']);
+        Route::get('/jobs', [JobPostController::class, 'index'])->middleware('auth:sanctum');
+        Route::post('/addjobs', [JobPostController::class, 'store'])->middleware('auth:sanctum');
+        Route::get('/jobs/{id}', [JobPostController::class, 'show'])->middleware('auth:sanctum');
+        Route::put('/jobs/{id}', [JobPostController::class, 'update'])->middleware('auth:sanctum');
+        Route::delete('/jobs/{id}', [JobPostController::class, 'destroy'])->middleware('auth:sanctum');
 
         // Applications for a specific job
         Route::get('/jobs/{id}/applications', [JobPostController::class, 'applications']);
@@ -88,19 +88,19 @@ Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
         Route::put('/jobs/{jobId}/applications/{applicationId}/status', [JobPostController::class, 'updateApplicationStatus'])->middleware('auth:sanctum');
 
 
-Route::prefix('jobs')->group(function () {
-    Route::get('/', [JobController::class, 'index']);
-    Route::post('/', [JobController::class, 'store']);
-    Route::get('/{id}', [JobController::class, 'show']);
-    Route::put('/{id}', [JobController::class, 'update']);
-    Route::delete('/{id}', [JobController::class, 'destroy']);
-    Route::patch('/{id}/toggle-active', [JobController::class, 'toggleActive']);
-    // Route::get('/{jobId}/comments', [JobCommentController::class, 'index']);
-    // Route::post('/{jobId}/comments', [JobCommentController::class, 'store']);
-    // Route::put('/{jobId}/comments/{commentId}', [JobCommentController::class, 'update']);
-    // Route::delete('/{jobId}/comments/{commentId}', [JobCommentController::class, 'destroy']);
-    Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
-});
+// Route::prefix('jobs')->group(function () {
+//     Route::get('/', [JobController::class, 'index']);
+//     Route::post('/', [JobController::class, 'store']);
+//     Route::get('/{id}', [JobController::class, 'show']);
+//     Route::put('/{id}', [JobController::class, 'update']);
+//     Route::delete('/{id}', [JobController::class, 'destroy']);
+//     Route::patch('/{id}/toggle-active', [JobController::class, 'toggleActive']);
+//     // Route::get('/{jobId}/comments', [JobCommentController::class, 'index']);
+//     // Route::post('/{jobId}/comments', [JobCommentController::class, 'store']);
+//     // Route::put('/{jobId}/comments/{commentId}', [JobCommentController::class, 'update']);
+//     // Route::delete('/{jobId}/comments/{commentId}', [JobCommentController::class, 'destroy']);
+//     Route::get('/{jobId}/applications', [ApplicationController::class, 'jobApplications']);
+// });
 
 Route::prefix('applications')->middleware('auth:sanctum')->group(function () {
     Route::patch('/{applicationId}/status', [ApplicationController::class, 'updateApplicationStatus']);

@@ -30,14 +30,14 @@ class JobPostController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->employer) {
+        if ($user->role!="employer") {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
             ], 403);
         }
 
-        $jobs = Job::where('employer_id', $user->employer->id)
+        $jobs = Job::where('employer_id', $user->id)
             ->withCount('applications')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -51,7 +51,7 @@ class JobPostController extends Controller
                     'status' => $job->status ?? ($job->is_active ? 'active' : 'inactive'),
                     'closing_date' => $job->closing_date ? date('Y-m-d', strtotime($job->closing_date)) : null,
                     'applications_count' => $job->applications_count,
-                    'created_at' => $job->created_at->format('Y-m-d H:i:s'),
+                    'created_at' => $job->created_at,
                     'is_remote' => $job->is_remote,
                     'experience_level' => $job->experience_level,
                     'work_type' => $job->work_type,

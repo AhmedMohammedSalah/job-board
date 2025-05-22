@@ -9,15 +9,13 @@ use Illuminate\Support\Facades\Auth;
 // FavoriteJob
 use App\Models\FavoriteJob;
 use Illuminate\Support\Facades\Validator;
-
 class JobController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-        $employer = $user->employer;
 
-        $jobs = $employer->jobs()
+        $jobs =Job::where('employer_id', $user->id)
             ->withCount('applications')
             ->orderBy('created_at', 'desc')
             ->get();
