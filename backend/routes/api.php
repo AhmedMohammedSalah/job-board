@@ -77,10 +77,10 @@ Route::get('/filter-options', [JobController::class, 'getFilterOptions']);
         Route::delete('/jobs/{id}', [JobPostController::class, 'destroy'])->middleware('auth:sanctum');
 
         // Applications for a specific job
-        Route::get('/jobs/{id}/applications', [JobPostController::class, 'applications']);
+        Route::get('/jobs/{id}/applications', [JobPostController::class, 'applications'])->middleware('auth:sanctum');;
 
         // All applications across all employer jobs
-        Route::get('/applications', [JobPostController::class, 'employerApplications']);
+        Route::get('/applications', [JobPostController::class, 'employerApplications'])->middleware('auth:sanctum');;
 
         // Accept/reject/update a specific application
         Route::post('/jobs/{jobId}/applications/{applicationId}/accept', [JobPostController::class, 'acceptApplication'])->middleware('auth:sanctum');

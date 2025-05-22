@@ -145,7 +145,7 @@ class JobPostController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->employer) {
+        if ($user->role!="employer") {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
@@ -153,9 +153,10 @@ class JobPostController extends Controller
         }
 
         $job = Job::where('id', $id)
-            ->where('employer_id', $user->employer->id)
-            ->with(['applications.user', 'comments.user'])
+            ->where('employer_id', $user->id)
+            ->with(['applications', 'category'])
             ->withCount('applications')
+
             ->first();
 
         if (!$job) {
@@ -171,122 +172,32 @@ class JobPostController extends Controller
             'message' => 'Job retrieved successfully'
         ]);
     }
-
-    /**
-     * Update the specified job
-     */
-
-    // public function update(Request $request, $id)
-    // {
-
-    //     $validator = Validator::make($request->all(), [
-    //         'title' => 'sometimes|string|max:255',
-    //         'description' => 'sometimes|string',
-    //         'responsibilities' => 'nullable|string',
-    //         'requirements' => 'nullable|string',
-    //         'category' => 'sometimes|string|max:100',
-    //         'location' => 'sometimes|string|max:255',
-    //         'technologies' => 'nullable|array',
-    //         'work_type' => 'sometimes|in:remote,onsite,hybrid',
-    //         'employment_type' => 'sometimes|string|max:100',
-    //         'salary_min' => 'nullable|numeric',
-    //         'salary_max' => 'nullable|numeric',
-    //         'benefits' => 'nullable|string',
-    //         'deadline' => 'nullable|date',
-    //         'is_active' => 'sometimes|boolean',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json(['errors' => $validator->errors()], 422);
-    //     }
-
-    //     $user = Auth::user();
-
-    //     $job = Job::where('id', $id)
-    //         ->where('employer_id', $user->employer->id)
-    //         ->first();
-
-    //     if (!$job) {
-    //         return response()->json(['message' => 'Job not found'], 404);
-    //     }
-
-    //     // Update expiration date if deadline is updated
-    //     if ($request->has('deadline')) {
-    //         $job->expires_at = Carbon::parse($request->deadline);
-    //     }
-
-    //     $job->fill($request->all());
-    //     $job->save();
-
-    //     return response()->json([
-    //         'message' => 'Job updated successfully',
-    //         'job' => $job,
-    //     ]);
-    // }
     public function update(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
+        $job = Job::where('id', $id)->where('employer_id', Auth::id())->firstOrFail();
+
+        $validated = $request->validate([
+            'category_id' => 'sometimes|exists:categories,id',
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
-            'responsibilities' => 'nullable|string',
-            'requirements' => 'sometimes|array',
-            'location' => 'sometimes|string|max:255',
-            'requirements' => 'nullable|string',
-            'location' => 'sometimes|string',
-            'salary' => 'nullable|numeric',
-            'salary_min' => 'nullable|numeric',
-            'salary_max' => 'nullable|numeric',
-            'type' => 'sometimes|in:full-time,part-time,contract,freelance',
-            'employment_type' => 'sometimes|string|max:100',
-            'work_type' => 'sometimes|in:remote,onsite,hybrid',
-            'closing_date' => 'nullable|date',
-            'status' => 'sometimes|in:draft,published,closed,expired,pending,approved,rejected',
-            'is_remote' => 'sometimes|boolean',
-            'experience_level' => 'sometimes|in:entry,mid,senior',
+            'responsibilities' => 'sometimes|string',
+            'requirements' => 'sometimes|string',
             'benefits' => 'nullable|string',
-            'is_active' => 'sometimes|boolean',
-            'category' => 'sometimes|string|max:100',
-            'technologies' => 'nullable|array',
-            'deadline' => 'nullable|date',
-            'rejection_reason' => 'required_if:status,rejected|nullable|string|max:500'
+            'work_type' => 'sometimes|in:remote,onsite,hybrid',
+            'location' => 'sometimes|string',
+            'min_salary' => 'nullable|numeric',
+            'max_salary' => 'nullable|numeric',
+            'deadline' => 'sometimes|date',
+            'status' => 'sometimes|in:draft,pending,published,expired',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        if (isset($validated['title'])) {
+            $validated['slug'] = Str::slug($validated['title']) . '-' . Str::random(5);
         }
 
-        $user = Auth::user();
+        $job->update($validated);
 
-        if (!$user->employer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized. Not an employer account.'
-            ], 403);
-        }
-
-        $job = Job::where('id', $id)
-            ->where('employer_id', $user->employer->id)
-            ->first();
-
-        if (!$job) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Job not found or not owned by employer'
-            ], 404);
-        }
-
-        // Update expiration date if closing_date is updated
-        if ($request->has('closing_date')) {
-            $job->expires_at = Carbon::parse($request->closing_date);
-        }
-
-        $job->update($validator->validated());
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $job,
-            'message' => 'Job updated successfully'
-        ]);
+        return response()->json(['message' => 'Job updated successfully', 'job' => $job]);
     }
 
     /**
@@ -296,7 +207,7 @@ class JobPostController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->employer) {
+        if ($user->role!="employer") {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
@@ -304,7 +215,7 @@ class JobPostController extends Controller
         }
 
         $job = Job::where('id', $id)
-            ->where('employer_id', $user->employer->id)
+            ->where('employer_id', $user->id)
             ->first();
 
         if (!$job) {
@@ -329,7 +240,7 @@ class JobPostController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->employer) {
+        if ($user->role!="employer") {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Not an employer account.'
@@ -337,57 +248,23 @@ class JobPostController extends Controller
         }
 
         // Find the job with different conditions based on user role
-        if ($user->isAdmin()) {
+        if ($user->role=="admin") {
             $job = Job::find($id);
         } else {
             $job = Job::where('id', $id)
-                ->where('employer_id', $user->employer->id)
+                ->where('employer_id', $user->id)
                 ->first();
         }
 
         if (!$job) {
             return response()->json(['message' => 'Job not found'], 404);
         }
-
-        // Admin-specific updates
-        if ($user->isAdmin() && $request->has('status')) {
-            $updateData = ['status' => $request->status];
-
-            if ($request->status === 'approved') {
-                $updateData['approved_at'] = now();
-                $updateData['is_active'] = true;
-            } elseif ($request->status === 'rejected') {
-                $updateData['rejection_reason'] = $request->rejection_reason;
-                $updateData['is_active'] = false;
-            }
-
-            $job->update($updateData);
-
-            // Here you would add notification logic
-            return response()->json([
-                'message' => 'Job status updated successfully',
-                'job' => $job,
-            ]);
-        }
-
-        // Original employer update logic
-        if ($request->has('deadline')) {
-            $job->expires_at = Carbon::parse($request->deadline);
-        }
-
-        // When employer updates, set status back to pending if it was rejected
-        if (!$user->isAdmin() && $job->status === 'rejected') {
-            $job->status = 'pending';
-            $job->rejection_reason = null;
-        }
-
-        $job->fill($request->except(['status', 'rejection_reason'])); // Prevent employers from changing these
-        $job->save();
-
         return response()->json([
-            'message' => 'Job updated successfully',
-            'job' => $job,
+            'status' => 'success',
+            'data' => $job->applications,
+            'message' => 'Applications retrieved successfully'
         ]);
+
     }
     public function pendingJobs()
     {
@@ -515,122 +392,123 @@ class JobPostController extends Controller
     /**
      * Reject a job application
      */
-    public function rejectApplication(string $jobId, string $applicationId)
-    {
-        $user = Auth::user();
+   public function rejectApplication(string $jobId, string $applicationId)
+        {
+            $user = Auth::user();
 
-        if (!$user->employer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized. Not an employer account.'
-            ], 403);
+            if ($user->role != "employer") {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized. Not an employer account.'
+                ], 403);
+            }
+
+            return DB::transaction(function () use ($jobId, $applicationId, $user) {
+                $job = Job::where('id', $jobId)
+                    ->where('employer_id', $user->id)
+                    ->first();
+
+                if (!$job) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Job not found or not owned by employer'
+                    ], 404);
+                }
+
+                $application = Application::where('id', $applicationId)
+                    ->where('job_id', $jobId)
+                    ->with('user')
+                    ->first();
+
+                if (!$application) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Application not found'
+                    ], 404);
+                }
+
+                $application->status = ApplicationStatus::REJECTED->value;
+                $application->save();
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [
+                        'application' => $application
+                    ],
+                    'message' => 'Application rejected successfully'
+                ]);
+            });
         }
 
-        $job = Job::where('id', $jobId)
-            ->where('employer_id', $user->employer->id)
-            ->first();
-
-        if (!$job) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Job not found or not owned by employer'
-            ], 404);
-        }
-
-        $application = Application::where('id', $applicationId)
-            ->where('job_id', $jobId)
-            ->with('user')
-            ->first();
-
-        if (!$application) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Application not found'
-            ], 404);
-        }
-
-        $application->status = 'rejected';
-        $application->employer_notes = $application->employer_notes . "\n[" . now()->format('Y-m-d H:i:s') . "] Application rejected.";
-        $application->save();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'application' => [
-                    'id' => $application->id,
-                    'status' => $application->status,
-                    'applicant_name' => $application->user->name,
-                    'job_title' => $job->title
-                ]
-            ],
-            'message' => 'Application rejected successfully'
-        ]);
-    }
 
     /**
      * Update application status
      */
     public function updateApplicationStatus(Request $request, string $jobId, string $applicationId)
-    {
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,reviewed,shortlisted,rejected,hired',
-            'employer_notes' => 'nullable|string',
-        ]);
+        {
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:pending,reviewed,shortlisted,rejected,hired',
+                'employer_notes' => 'nullable|string',
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $user = Auth::user();
+
+            if ($user->role != "employer") {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized. Not an employer account.'
+                ], 403);
+            }
+
+            return DB::transaction(function () use ($request, $jobId, $applicationId, $user) {
+                $job = Job::where('id', $jobId)
+                    ->where('employer_id', $user->id)
+                    ->first();
+
+                if (!$job) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Job not found or not owned by employer'
+                    ], 404);
+                }
+
+                $application = Application::where('id', $applicationId)
+                    ->where('job_id', $jobId)
+                    ->with('user')
+                    ->first();
+
+                if (!$application) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Application not found'
+                    ], 404);
+                }
+
+                $application->status = $request->status;
+
+                if ($request->filled('employer_notes')) {
+                    $application->employer_notes = $request->employer_notes;
+                }
+
+                $application->save();
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [
+                        'application' => $application
+                    ],
+                    'message' => 'Application status updated successfully'
+                ]);
+            });
         }
 
-        $user = Auth::user();
-
-        if (!$user->employer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized. Not an employer account.'
-            ], 403);
-        }
-
-        $job = Job::where('id', $jobId)
-            ->where('employer_id', $user->employer->id)
-            ->first();
-
-        if (!$job) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Job not found or not owned by employer'
-            ], 404);
-        }
-
-        $application = Application::where('id', $applicationId)
-            ->where('job_id', $jobId)
-            ->first();
-
-        if (!$application) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Application not found'
-            ], 404);
-        }
-
-        $application->status = $request->status;
-
-        if ($request->has('employer_notes')) {
-            $application->employer_notes = $request->employer_notes;
-        }
-
-        $application->save();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'application' => [
-                    'id' => $application->id,
-                    'status' => $application->status,
-                ]
-            ],
-            'message' => 'Application status updated successfully'
-        ]);
-    }
 
     /**
      * Toggle job active status
