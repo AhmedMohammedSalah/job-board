@@ -68,7 +68,9 @@
               <div v-if="jobs.length === 0" class="no-jobs">
                 <p>
                   No jobs posted yet.
-                  <router-link to="/employer/post-job">Create your first job</router-link>
+                  <router-link to="/employer/post-job"
+                    >Create your first job</router-link
+                  >
                 </p>
               </div>
 
@@ -76,245 +78,301 @@
                 <div
                   v-for="job in jobs"
                   :key="job.id"
-                  :class="['job-row', { 'selected-job': job.id === selectedJobId }]"
+                  :class="[
+                    'job-row',
+                    { 'selected-job': job.id === selectedJobId },
+                  ]"
                 >
                   <div class="col-job">
                     <h3>{{ job.title }}</h3>
                     <p>
-                      {{ job.work_type || 'N/A' }} •
+                      {{ job.work_type || "N/A" }} •
                       {{ formatTimeRemaining(job.created_at) }}
-                    </div>
+                    </p>
                   </div>
-                  <div class="col-status">
+                </div>
+                <div class="col-status">
+                  <span :class="['status-badge', getStatusClass(job.status)]">
                     <span
-                      :class="['status-badge', getStatusClass(job.status)]"
-                    >
-                      <span
-                        :class="['status-dot', getStatusClass(job.status)]"
-                      ></span>
-                      {{ job.status.charAt(0).toUpperCase() + job.status.slice(1) }}
-                    </span>
-                  </div>
-                  <div class="col-applications">
-                    <i class="bi bi-people"></i>
-                    <span>{{ job.applications_count || 0 }} Applications</span>
-                  </div>
-                  <div class="col-actions">
-                    <button class="btn-view" @click="showApplications(job.id)">
-                      View Applications
-                    </button>
-                    <button class="btn-menu" @click="toggleJobMenu(job.id)">
-                      <i class="bi bi-three-dots-vertical"></i>
-                    </button>
+                      :class="['status-dot', getStatusClass(job.status)]"
+                    ></span>
+                    {{
+                      job.status.charAt(0).toUpperCase() + job.status.slice(1)
+                    }}
+                  </span>
+                </div>
+                <div class="col-applications">
+                  <i class="bi bi-people"></i>
+                  <span>{{ job.applications_count || 0 }} Applications</span>
+                </div>
+                <div class="col-actions">
+                  <button class="btn-view" @click="showApplications(job.id)">
+                    View Applications
+                  </button>
+                  <button class="btn-menu" @click="toggleJobMenu(job.id)">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
 
-                    <div
-                      v-if="job.id === selectedJobId && showActionMenu"
-                      class="action-menu"
-                    >
-                      <ul>
-                        <li
-                          class="menu-item"
-                          @click="$router.push(`/employer/jobs/${job.id}`)"
-                        >
-                          <i class="bi bi-eye"></i>
-                          View Detail
-                        </li>
-                        <li class="menu-item" @click="toggleJobStatus(job.id)">
-                          <i class="bi bi-check-circle"></i>
-                          {{ job.is_active ? "Mark as Expired" : "Reactivate" }}
-                        </li>
-                      </ul>
-                    </div>
+                  <div
+                    v-if="job.id === selectedJobId && showActionMenu"
+                    class="action-menu"
+                  >
+                    <ul>
+                      <li
+                        class="menu-item"
+                        @click="$router.push(`/employer/jobs/${job.id}`)"
+                      >
+                        <i class="bi bi-eye"></i>
+                        View Detail
+                      </li>
+                      <li class="menu-item" @click="toggleJobStatus(job.id)">
+                        <i class="bi bi-check-circle"></i>
+                        {{ job.is_active ? "Mark as Expired" : "Reactivate" }}
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div v-if="showApplicationsPanel" class="applications-panel">
-            <div class="applications-header">
-              <h2>Applications for {{ selectedJobDetails?.title }}</h2>
-              <button class="close-btn" @click="closeApplications">
+        <div v-if="showApplicationsPanel" class="applications-panel">
+          <div class="applications-header">
+            <h2>Applications for {{ selectedJobDetails?.title }}</h2>
+            <button class="close-btn" @click="closeApplications">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <div class="applications-content">
+            <div v-if="loadingApplications" class="loading-applications">
+              <div class="loading-spinner"></div>
+              <p>Loading applications...</p>
+            </div>
+
+            <div v-else>
+              <div
+                v-for="applicant in selectedJobDetails?.applications || []"
+                :key="applicant.id"
+                class="applicant-card"
+              >
+                <div class="applicant-info">
+                  <div class="applicant-avatar">
+                    <i class="bi bi-person-circle"></i>
+                  </div>
+                  <div class="applicant-details">
+                    <h3>
+                      {{
+                        applicant.candidate?.name ||
+                        applicant.user?.name ||
+                        "N/A"
+                      }}
+                    </h3>
+                    <p>Job Seeker</p>
+                    <div class="application-meta">
+                      <small
+                        >Applied:
+                        {{ formatDate(applicant.created_at) || "N/A" }}</small
+                      >
+                      <span
+                        :class="['status-badge', `status-${applicant.status}`]"
+                      >
+                        {{
+                          applicant.status.charAt(0).toUpperCase() +
+                          applicant.status.slice(1)
+                        }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="applicant-actions">
+                  <button
+                    class="btn-review"
+                    @click="viewApplication(applicant)"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    class="btn-accept"
+                    :disabled="applicant.status !== 'pending'"
+                    @click="
+                      acceptApplication(applicant, selectedJobDetails.jobId)
+                    "
+                  >
+                    Accept
+                  </button>
+                  <button
+                    class="btn-reject"
+                    :disabled="applicant.status !== 'pending'"
+                    @click="
+                      rejectApplication(applicant, selectedJobDetails.jobId)
+                    "
+                  >
+                    Reject
+                  </button>
+                  <button
+                    class="btn-contact"
+                    @click="contactApplicant(applicant)"
+                  >
+                    Contact
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-if="selectedJobDetails?.applications?.length === 0"
+                class="no-applicants"
+              >
+                No applications available to display
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Application Details Modal -->
+        <div v-if="showApplicationModal" class="modal-overlay">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>Application Details</h2>
+              <button class="close-btn" @click="closeApplicationModal">
                 <i class="bi bi-x"></i>
               </button>
             </div>
-            <div class="applications-content">
-              <div v-if="loadingApplications" class="loading-applications">
+            <div class="modal-body">
+              <div v-if="loadingApplicationDetails" class="loading">
                 <div class="loading-spinner"></div>
-                <p>Loading applications...</p>
+                <p>Loading application details...</p>
               </div>
-
-              <div v-else>
-                <div
-                  v-for="applicant in selectedJobDetails?.applications || []"
-                  :key="applicant.id"
-                  class="applicant-card"
+              <div v-else-if="applicationDetailsError" class="error-alert">
+                <i class="bi bi-exclamation-circle"></i>
+                <p>{{ applicationDetailsError }}</p>
+                <button
+                  @click="fetchApplicationDetails(selectedApplication.id)"
                 >
-                  <div class="applicant-info">
-                    <div class="applicant-avatar">
-                      <i class="bi bi-person-circle"></i>
-                    </div>
-                    <div class="applicant-details">
-                      <h3>{{ applicant.candidate?.name || applicant.user?.name || 'N/A' }}</h3>
-                      <p>Job Seeker</p>
-                      <div class="application-meta">
-                        <small>Applied: {{ formatDate(applicant.created_at) || 'N/A' }}</small>
-                        <span
-                          :class="['status-badge', `status-${applicant.status}`]"
-                        >
-                          {{ applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="applicant-actions">
-                    <button
-                      class="btn-review"
-                      @click="viewApplication(applicant)"
-                    >
-                      View Details
-                    </button>
-                    <button
-                      class="btn-accept"
-                      :disabled="applicant.status !== 'pending'"
-                      @click="acceptApplication(applicant, selectedJobDetails.jobId)"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      class="btn-reject"
-                      :disabled="applicant.status !== 'pending'"
-                      @click="rejectApplication(applicant, selectedJobDetails.jobId)"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      class="btn-contact"
-                      @click="contactApplicant(applicant)"
-                    >
-                      Contact
-                    </button>
-                  </div>
+                  Retry
+                </button>
+              </div>
+              <div v-else class="application-details">
+                <div class="detail-group">
+                  <label>Candidate Name</label>
+                  <p>{{ applicationDetails.candidate?.name || "N/A" }}</p>
                 </div>
-
-                <div
-                  v-if="selectedJobDetails?.applications?.length === 0"
-                  class="no-applicants"
-                >
-                  No applications available to display
+                <div class="detail-group">
+                  <label>Email</label>
+                  <p>{{ applicationDetails.candidate?.email || "N/A" }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Job Title</label>
+                  <p>{{ applicationDetails.job?.title || "N/A" }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Status</label>
+                  <span
+                    :class="[
+                      'status-badge',
+                      `status-${applicationDetails.status}`,
+                    ]"
+                  >
+                    {{
+                      applicationDetails.status.charAt(0).toUpperCase() +
+                      applicationDetails.status.slice(1)
+                    }}
+                  </span>
+                </div>
+                <div class="detail-group">
+                  <label>Applied Date</label>
+                  <p>
+                    {{
+                      applicationDetails.created_at
+                        ? formatDate(applicationDetails.created_at)
+                        : "N/A"
+                    }}
+                  </p>
+                </div>
+                <div class="detail-group">
+                  <label>Cover Letter</label>
+                  <p
+                    v-if="applicationDetails.cover_letter"
+                    class="cover-letter"
+                  >
+                    {{ applicationDetails.cover_letter }}
+                  </p>
+                  <p v-else class="no-data">No cover letter provided</p>
+                </div>
+                <div class="detail-group">
+                  <label>Resume</label>
+                  <p v-if="applicationDetails.resume_path">
+                    <a
+                      :href="applicationDetails.resume_path"
+                      target="_blank"
+                      class="resume-link"
+                    >
+                      View Resume
+                    </a>
+                  </p>
+                  <p v-else class="no-data">No resume provided</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Application Details Modal -->
-          <div v-if="showApplicationModal" class="modal-overlay">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h2>Application Details</h2>
-                <button class="close-btn" @click="closeApplicationModal">
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
-              <div class="modal-body">
-                <div v-if="loadingApplicationDetails" class="loading">
-                  <div class="loading-spinner"></div>
-                  <p>Loading application details...</p>
-                </div>
-                <div v-else-if="applicationDetailsError" class="error-alert">
-                  <i class="bi bi-exclamation-circle"></i>
-                  <p>{{ applicationDetailsError }}</p>
-                  <button @click="fetchApplicationDetails(selectedApplication.id)">
-                    Retry
-                  </button>
-                </div>
-                <div v-else class="application-details">
-                  <div class="detail-group">
-                    <label>Candidate Name</label>
-                    <p>{{ applicationDetails.candidate?.name || 'N/A' }}</p>
-                  </div>
-                  <div class="detail-group">
-                    <label>Email</label>
-                    <p>{{ applicationDetails.candidate?.email || 'N/A' }}</p>
-                  </div>
-                  <div class="detail-group">
-                    <label>Job Title</label>
-                    <p>{{ applicationDetails.job?.title || 'N/A' }}</p>
-                  </div>
-                  <div class="detail-group">
-                    <label>Status</label>
-                    <span :class="['status-badge', `status-${applicationDetails.status}`]">
-                      {{ applicationDetails.status.charAt(0).toUpperCase() + applicationDetails.status.slice(1) }}
-                    </span>
-                  </div>
-                  <div class="detail-group">
-                    <label>Applied Date</label>
-                    <p>{{ applicationDetails.created_at ? formatDate(applicationDetails.created_at) : 'N/A' }}</p>
-                  </div>
-                  <div class="detail-group">
-                    <label>Cover Letter</label>
-                    <p v-if="applicationDetails.cover_letter" class="cover-letter">
-                      {{ applicationDetails.cover_letter }}
-                    </p>
-                    <p v-else class="no-data">No cover letter provided</p>
-                  </div>
-                  <div class="detail-group">
-                    <label>Resume</label>
-                    <p v-if="applicationDetails.resume_path">
-                      <a :href="applicationDetails.resume_path" target="_blank" class="resume-link">
-                        View Resume
-                      </a>
-                    </p>
-                    <p v-else class="no-data">No resume provided</p>
-                  </div>
-                </div>
-              </div>
-              <div v-if="!loadingApplicationDetails && !applicationDetailsError" class="modal-footer">
-                <button
-                  class="btn-accept"
-                  :disabled="applicationDetails.status !== 'pending'"
-                  @click="acceptApplication(selectedApplication, applicationDetails.job_id)"
-                >
-                  Accept
-                </button>
-                <button
-                  class="btn-reject"
-                  :disabled="applicationDetails.status !== 'pending'"
-                  @click="rejectApplication(selectedApplication, applicationDetails.job_id)"
-                >
-                  Reject
-                </button>
-                <button class="btn-close" @click="closeApplicationModal">
-                  Close
-                </button>
-              </div>
+            <div
+              v-if="!loadingApplicationDetails && !applicationDetailsError"
+              class="modal-footer"
+            >
+              <button
+                class="btn-accept"
+                :disabled="applicationDetails.status !== 'pending'"
+                @click="
+                  acceptApplication(
+                    selectedApplication,
+                    applicationDetails.job_id
+                  )
+                "
+              >
+                Accept
+              </button>
+              <button
+                class="btn-reject"
+                :disabled="applicationDetails.status !== 'pending'"
+                @click="
+                  rejectApplication(
+                    selectedApplication,
+                    applicationDetails.job_id
+                  )
+                "
+              >
+                Reject
+              </button>
+              <button class="btn-close" @click="closeApplicationModal">
+                Close
+              </button>
             </div>
           </div>
-
-          <div
-            v-if="showApplicationsPanel"
-            class="overlay"
-            @click="closeApplications"
-          ></div>
         </div>
+
+        <div
+          v-if="showApplicationsPanel"
+          class="overlay"
+          @click="closeApplications"
+        ></div>
       </div>
     </div>
   </div>
+
   <AppFooter />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import SidebarComponent from './SidebarComponent.vue';
-import axios from 'axios';
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import SidebarComponent from "./SidebarComponent.vue";
+import axios from "axios";
 
 // Configure axios with auth
 const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: "/api",
 });
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem("auth_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -322,14 +380,14 @@ axiosInstance.interceptors.request.use((config) => {
 });
 
 // Auth management
-const token = ref(localStorage.getItem('auth_token') || null);
+const token = ref(localStorage.getItem("auth_token") || null);
 const setToken = (newToken) => {
   token.value = newToken;
-  localStorage.setItem('auth_token', newToken);
+  localStorage.setItem("auth_token", newToken);
 };
 const clearToken = () => {
   token.value = null;
-  localStorage.removeItem('auth_token');
+  localStorage.removeItem("auth_token");
 };
 
 const router = useRouter();
@@ -355,31 +413,37 @@ const loadingApplicationDetails = ref(false);
 const applicationDetailsError = ref(null);
 
 const fetchDashboardData = async () => {
-  console.log('Fetching dashboard data...');
+  console.log("Fetching dashboard data...");
   isLoading.value = true;
   error.value = null;
 
   try {
-    const response = await axiosInstance.get('/jobs');
-    console.log('Jobs response:', response.data);
+    const response = await axiosInstance.get("/jobs");
+    console.log("Jobs response:", response.data);
     jobs.value = response.data.data || [];
 
     stats.value = {
-      openJobs: jobs.value.filter(job => job.status === 'published' && job.is_active).length,
-      totalApplications: jobs.value.reduce((sum, job) => sum + (job.applications_count || 0), 0),
+      openJobs: jobs.value.filter(
+        (job) => job.status === "published" && job.is_active
+      ).length,
+      totalApplications: jobs.value.reduce(
+        (sum, job) => sum + (job.applications_count || 0),
+        0
+      ),
     };
 
-    console.log('Dashboard data loaded:', jobs.value);
+    console.log("Dashboard data loaded:", jobs.value);
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to load dashboard data';
-    console.error('Fetch dashboard error:', err);
+    error.value =
+      err.response?.data?.message || "Failed to load dashboard data";
+    console.error("Fetch dashboard error:", err);
     if (err.response) {
-      console.error('Response status:', err.response.status);
-      console.error('Response data:', err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
     if (err.response?.status === 401) {
       clearToken();
-      router.push('/login');
+      router.push("/login");
     }
   } finally {
     isLoading.value = false;
@@ -387,31 +451,31 @@ const fetchDashboardData = async () => {
 };
 
 const showApplications = async (jobId) => {
-  console.log('Fetching applications for job:', jobId);
+  console.log("Fetching applications for job:", jobId);
   loadingApplications.value = true;
   showApplicationsPanel.value = true;
 
   try {
     const response = await axiosInstance.get(`/jobs/${jobId}/applications`);
-    console.log('Applications response:', response.data);
-    const job = jobs.value.find(j => j.id === jobId);
+    console.log("Applications response:", response.data);
+    const job = jobs.value.find((j) => j.id === jobId);
     selectedJobDetails.value = {
       jobId,
-      title: job?.title || 'Job',
+      title: job?.title || "Job",
       applications: response.data.data || [],
     };
 
-    console.log('Applications loaded:', selectedJobDetails.value);
+    console.log("Applications loaded:", selectedJobDetails.value);
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to load applications';
-    console.error('Fetch applications error:', err);
+    error.value = err.response?.data?.message || "Failed to load applications";
+    console.error("Fetch applications error:", err);
     if (err.response) {
-      console.error('Response status:', err.response.status);
-      console.error('Response data:', err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
     if (err.response?.status === 401) {
       clearToken();
-      router.push('/login');
+      router.push("/login");
     }
   } finally {
     loadingApplications.value = false;
@@ -419,70 +483,85 @@ const showApplications = async (jobId) => {
 };
 
 const toggleJobStatus = async (jobId) => {
-  console.log('Toggling status for job:', jobId);
+  console.log("Toggling status for job:", jobId);
   try {
-    const response = await axiosInstance.patch(`/jobs/${jobId}/toggle-active`, {});
-    console.log('Toggle status response:', response.data);
-    const job = jobs.value.find(j => j.id === jobId);
+    const response = await axiosInstance.patch(
+      `/jobs/${jobId}/toggle-active`,
+      {}
+    );
+    console.log("Toggle status response:", response.data);
+    const job = jobs.value.find((j) => j.id === jobId);
     if (job) {
       job.is_active = response.data.data.is_active;
       job.status = response.data.data.status;
     }
 
-    stats.value.openJobs = jobs.value.filter(job => job.status === 'published' && job.is_active).length;
+    stats.value.openJobs = jobs.value.filter(
+      (job) => job.status === "published" && job.is_active
+    ).length;
     showActionMenu.value = false;
     selectedJobId.value = null;
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to update job status';
-    console.error('Toggle job status error:', err);
+    error.value = err.response?.data?.message || "Failed to update job status";
+    console.error("Toggle job status error:", err);
     if (err.response) {
-      console.error('Response status:', err.response.status);
-      console.error('Response data:', err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
     if (err.response?.status === 401) {
       clearToken();
-      router.push('/login');
+      router.push("/login");
     }
   }
 };
 
 const acceptApplication = async (applicant, jobId) => {
-  console.log('Initiating payment for application:', applicant.id, 'for job:', jobId);
-  if (!confirm('Accepting this application requires a $50 payment. Proceed?')) {
+  console.log(
+    "Initiating payment for application:",
+    applicant.id,
+    "for job:",
+    jobId
+  );
+  if (!confirm("Accepting this application requires a $50 payment. Proceed?")) {
     return;
   }
 
   try {
-    const response = await axiosInstance.post(`/jobs/${jobId}/applications/${applicant.id}/accept`);
-    console.log('Payment initiation response:', response.data);
+    const response = await axiosInstance.post(
+      `/jobs/${jobId}/applications/${applicant.id}/accept`
+    );
+    console.log("Payment initiation response:", response.data);
     if (response.data.checkout_url) {
       window.location.href = response.data.checkout_url;
     } else {
-      error.value = 'Payment initiation failed';
+      error.value = "Payment initiation failed";
     }
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to initiate payment';
-    console.error('Payment initiation error:', err);
+    error.value = err.response?.data?.message || "Failed to initiate payment";
+    console.error("Payment initiation error:", err);
     if (err.response) {
-      console.error('Response status:', err.response.status);
-      console.error('Response data:', err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
     if (err.response?.status === 401) {
       clearToken();
-      router.push('/login');
+      router.push("/login");
     }
   }
 };
 
 const rejectApplication = async (applicant, jobId) => {
-  console.log('Rejecting application:', applicant.id, 'for job:', jobId);
+  console.log("Rejecting application:", applicant.id, "for job:", jobId);
   try {
-    const rejectionReason = prompt('Enter rejection reason (optional):') || '';
-    const response = await axiosInstance.post(`/jobs/${jobId}/applications/${applicant.id}/reject`, {
-      rejection_reason: rejectionReason,
-    });
-    console.log('Reject application response:', response.data);
-    applicant.status = response.data.data.status || 'rejected';
+    const rejectionReason = prompt("Enter rejection reason (optional):") || "";
+    const response = await axiosInstance.post(
+      `/jobs/${jobId}/applications/${applicant.id}/reject`,
+      {
+        rejection_reason: rejectionReason,
+      }
+    );
+    console.log("Reject application response:", response.data);
+    applicant.status = response.data.data.status || "rejected";
     if (showApplicationModal.value) {
       closeApplicationModal();
     }
@@ -491,46 +570,47 @@ const rejectApplication = async (applicant, jobId) => {
       showApplications(selectedJobDetails.value.jobId);
     }
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to reject application';
-    console.error('Reject application error:', err);
+    error.value = err.response?.data?.message || "Failed to reject application";
+    console.error("Reject application error:", err);
     if (err.response) {
-      console.error('Response status:', err.response.status);
-      console.error('Response data:', err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
     if (err.response?.status === 401) {
       clearToken();
-      router.push('/login');
+      router.push("/login");
     }
   }
 };
 
 const viewApplication = (applicant) => {
-  console.log('Viewing application:', applicant.id);
+  console.log("Viewing application:", applicant.id);
   selectedApplication.value = applicant;
   showApplicationModal.value = true;
   fetchApplicationDetails(applicant.id);
 };
 
 const fetchApplicationDetails = async (applicationId) => {
-  console.log('Fetching application details for ID:', applicationId);
+  console.log("Fetching application details for ID:", applicationId);
   loadingApplicationDetails.value = true;
   applicationDetailsError.value = null;
   applicationDetails.value = null;
 
   try {
     const response = await axiosInstance.get(`/applications/${applicationId}`);
-    console.log('Application details response:', response.data);
+    console.log("Application details response:", response.data);
     applicationDetails.value = response.data.data;
   } catch (err) {
-    applicationDetailsError.value = err.response?.data?.message || 'Failed to load application details';
-    console.error('Fetch application details error:', err);
+    applicationDetailsError.value =
+      err.response?.data?.message || "Failed to load application details";
+    console.error("Fetch application details error:", err);
     if (err.response) {
-      console.error('Response status:', err.response.status);
-      console.error('Response data:', err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
     if (err.response?.status === 401) {
       clearToken();
-      router.push('/login');
+      router.push("/login");
     }
   } finally {
     loadingApplicationDetails.value = false;
@@ -538,7 +618,7 @@ const fetchApplicationDetails = async (applicationId) => {
 };
 
 const closeApplicationModal = () => {
-  console.log('Closing application modal');
+  console.log("Closing application modal");
   showApplicationModal.value = false;
   selectedApplication.value = null;
   applicationDetails.value = null;
@@ -546,51 +626,60 @@ const closeApplicationModal = () => {
 };
 
 const contactApplicant = (applicant) => {
-  console.log('Contacting applicant:', applicant.candidate?.email || applicant.user?.email);
-  window.location.href = `mailto:${applicant.candidate?.email || applicant.user?.email || ''}`;
+  console.log(
+    "Contacting applicant:",
+    applicant.candidate?.email || applicant.user?.email
+  );
+  window.location.href = `mailto:${
+    applicant.candidate?.email || applicant.user?.email || ""
+  }`;
 };
 
 const closeApplications = () => {
-  console.log('Closing applications panel');
+  console.log("Closing applications panel");
   showApplicationsPanel.value = false;
   selectedJobDetails.value = null;
 };
 
 const handleNavigation = (index) => {
-  console.log('Handling navigation with index:', index);
-  const routes = ['/employer/dashboard', '/employer/jobs', '/employer/post-job'];
+  console.log("Handling navigation with index:", index);
+  const routes = [
+    "/employer/dashboard",
+    "/employer/jobs",
+    "/employer/post-job",
+  ];
 
   if (index < 0 || index >= routes.length) {
-    console.error('Invalid navigation index:', index);
-    error.value = 'Invalid navigation option selected';
+    console.error("Invalid navigation index:", index);
+    error.value = "Invalid navigation option selected";
     return;
   }
 
   const targetRoute = routes[index];
-  console.log('Navigating to:', targetRoute);
+  console.log("Navigating to:", targetRoute);
 
   try {
-    router.push(targetRoute).catch(err => {
-      console.error('Router push error:', err);
+    router.push(targetRoute).catch((err) => {
+      console.error("Router push error:", err);
       error.value = `Failed to navigate to ${targetRoute}`;
     });
   } catch (err) {
-    console.error('Navigation error:', err);
-    error.value = 'Navigation failed';
+    console.error("Navigation error:", err);
+    error.value = "Navigation failed";
   }
 };
 
 const handleLogout = () => {
-  console.log('Logging out');
+  console.log("Logging out");
   clearToken();
-  router.push('/login').catch(err => {
-    console.error('Logout navigation error:', err);
-    error.value = 'Failed to navigate to login';
+  router.push("/login").catch((err) => {
+    console.error("Logout navigation error:", err);
+    error.value = "Failed to navigate to login";
   });
 };
 
 const toggleJobMenu = (jobId) => {
-  console.log('Toggling job menu for:', jobId);
+  console.log("Toggling job menu for:", jobId);
   if (selectedJobId.value === jobId) {
     showActionMenu.value = !showActionMenu.value;
   } else {
@@ -600,52 +689,56 @@ const toggleJobMenu = (jobId) => {
 };
 
 const formatDate = (date) => {
-  if (!date) return 'N/A';
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!date) return "N/A";
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 };
 
 const formatTimeRemaining = (createdAt) => {
-  if (!createdAt) return 'N/A';
+  if (!createdAt) return "N/A";
   const created = new Date(createdAt);
   const now = new Date();
   const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
-  return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 };
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'published':
-      return 'status-active';
-    case 'draft':
-      return 'status-draft';
-    case 'expired':
-      return 'status-expired';
+    case "published":
+      return "status-active";
+    case "draft":
+      return "status-draft";
+    case "expired":
+      return "status-expired";
     default:
-      return 'status-pending';
+      return "status-pending";
   }
 };
 
 onMounted(() => {
-  console.log('Dashboard mounted');
-  console.log('Router available:', !!router);
-  console.log('Auth token:', token.value);
+  console.log("Dashboard mounted");
+  console.log("Router available:", !!router);
+  console.log("Auth token:", token.value);
   if (!token.value) {
-    console.warn('No auth token, redirecting to login');
-    router.push('/login');
+    console.warn("No auth token, redirecting to login");
+    router.push("/login");
   } else {
     fetchDashboardData();
 
     // Handle payment redirect
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    const applicationId = urlParams.get('application_id');
-    if (paymentStatus === 'success') {
-      error.value = 'Payment successful! Application accepted.';
+    const paymentStatus = urlParams.get("payment");
+    const applicationId = urlParams.get("application_id");
+    if (paymentStatus === "success") {
+      error.value = "Payment successful! Application accepted.";
       if (applicationId && selectedJobDetails.value) {
         showApplications(selectedJobDetails.value.jobId);
       }
-    } else if (paymentStatus === 'cancel') {
-      error.value = 'Payment cancelled. Application not accepted.';
+    } else if (paymentStatus === "cancel") {
+      error.value = "Payment cancelled. Application not accepted.";
     }
   }
 });
@@ -1166,8 +1259,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-alert {
