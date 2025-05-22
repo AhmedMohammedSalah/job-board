@@ -4,86 +4,81 @@
     <div class="container mt-4 flex-grow-1">
       <div class="card shadow-sm">
         <div class="card-header bg-white py-3">
-          <h2 class="card-title mb-0">Post a job</h2>
+          <h2 class="card-title mb-0">Post a Job</h2>
         </div>
         <div class="card-body">
+          <div v-if="isLoading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>{{ loadingMessage }}</p>
+          </div>
+          <div v-if="error" class="error-alert">
+            <i class="bi bi-exclamation-circle"></i>
+            <p>{{ error }}</p>
+            <button @click="retryFetchCategories">Retry</button>
+          </div>
           <form
+            v-if="!isLoading && !error"
             @submit.prevent="validateAndSubmit"
             class="needs-validation"
             novalidate
             ref="jobForm"
           >
             <div class="mb-4">
-              <label for="jobTitle" class="form-label fw-medium"
-                >Job Title <span class="text-danger">*</span></label
+              <label for="category" class="form-label fw-medium">
+                Category <span class="text-danger">*</span>
+              </label>
+              <select
+                class="form-select"
+                id="category"
+                v-model="jobData.category_id"
+                required
+                :disabled="categories.length === 0"
               >
+                <option value="" disabled>Select...</option>
+                <option
+                  v-for="category in categories"
+                  :key="category.id"
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
+              </select>
+              <div class="invalid-feedback">Please select a category.</div>
+              <div
+                v-if="categories.length === 0"
+                class="form-text text-warning"
+              >
+                No categories available. Contact support to add categories.
+              </div>
+            </div>
+            <div class="mb-4">
+              <label for="jobTitle" class="form-label fw-medium">
+                Job Title <span class="text-danger">*</span>
+              </label>
               <input
                 type="text"
                 class="form-control"
                 id="jobTitle"
                 placeholder="Add job title, role, vacancies etc"
-                v-model="jobData.jobTitle"
+                v-model="jobData.title"
                 required
               />
               <div class="invalid-feedback">Please provide a job title.</div>
             </div>
-            <div class="row mb-4">
-              <div class="col-md-8">
-                <label for="tags" class="form-label fw-medium">Tags</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="tags"
-                  placeholder="Job keyword, tags etc..."
-                  v-model="tagInput"
-                  @keydown.enter.prevent="addTag"
-                />
-                <div class="mt-2 d-flex flex-wrap gap-2">
-                  <span
-                    v-for="(tag, index) in jobData.tags"
-                    :key="index"
-                    class="badge bg-light text-dark p-2 d-flex align-items-center"
-                  >
-                    {{ tag }}
-                    <button
-                      type="button"
-                      class="btn-close ms-2"
-                      @click="removeTag(index)"
-                    ></button>
-                  </span>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <label for="jobRole" class="form-label fw-medium"
-                  >Job Role <span class="text-danger">*</span></label
-                >
-                <select
-                  class="form-select"
-                  id="jobRole"
-                  v-model="jobData.jobRole"
-                  required
-                >
-                  <option value="" disabled>Select...</option>
-                  <option v-for="role in jobRoles" :key="role" :value="role">
-                    {{ role }}
-                  </option>
-                </select>
-                <div class="invalid-feedback">Please select a job role.</div>
-              </div>
-            </div>
             <div class="mb-4">
-              <label class="form-label fw-medium"
-                >Salary <span class="text-danger">*</span></label
-              >
+              <label class="form-label fw-medium">
+                Salary <span class="text-danger">*</span>
+              </label>
               <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <div class="input-group has-validation">
                     <span class="input-group-text">Min</span>
                     <input
                       type="number"
                       class="form-control"
-                      v-model="jobData.minSalary"
+                      v-model="jobData.min_salary"
                       required
+                      min="0"
                     />
                     <span class="input-group-text">USD</span>
                     <div class="invalid-feedback">
@@ -91,14 +86,15 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <div class="input-group has-validation">
                     <span class="input-group-text">Max</span>
                     <input
                       type="number"
                       class="form-control"
-                      v-model="jobData.maxSalary"
+                      v-model="jobData.max_salary"
                       required
+                      min="0"
                     />
                     <span class="input-group-text">USD</span>
                     <div class="invalid-feedback">
@@ -106,197 +102,46 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-md-4">
-                  <select
-                    class="form-select"
-                    v-model="jobData.salaryType"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option
-                      v-for="type in salaryTypes"
-                      :key="type"
-                      :value="type"
-                    >
-                      {{ type }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">
-                    Please select a salary type.
-                  </div>
-                </div>
               </div>
             </div>
             <div class="mb-4 border rounded p-4">
-              <h5 class="mb-3">Advanced Information</h5>
-              <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-medium"
-                    >Education <span class="text-danger">*</span></label
-                  >
+              <h5 class="mb-3">Job Type</h5>
+              <div class="row g-3">
+                <div class="col-md-12">
                   <select
                     class="form-select"
-                    v-model="jobData.education"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option
-                      v-for="edu in educationLevels"
-                      :key="edu"
-                      :value="edu"
-                    >
-                      {{ edu }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">
-                    Please select an education level.
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-medium"
-                    >Experience <span class="text-danger">*</span></label
-                  >
-                  <select
-                    class="form-select"
-                    v-model="jobData.experience"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option
-                      v-for="exp in experienceLevels"
-                      :key="exp"
-                      :value="exp"
-                    >
-                      {{ exp }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">
-                    Please select an experience level.
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-medium"
-                    >Job Type <span class="text-danger">*</span></label
-                  >
-                  <select
-                    class="form-select"
-                    v-model="jobData.jobType"
+                    v-model="jobData.work_type"
                     required
                   >
                     <option value="" disabled>Select...</option>
                     <option v-for="type in jobTypes" :key="type" :value="type">
-                      {{ type }}
+                      {{ type.charAt(0).toUpperCase() + type.slice(1) }}
                     </option>
                   </select>
                   <div class="invalid-feedback">Please select a job type.</div>
                 </div>
               </div>
-
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-medium"
-                    >Vacancies <span class="text-danger">*</span></label
-                  >
-                  <select
-                    class="form-select"
-                    v-model="jobData.vacancies"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
-                  </select>
-                  <div class="invalid-feedback">
-                    Please select number of vacancies.
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-medium"
-                    >Expiration Date <span class="text-danger">*</span></label
-                  >
-                  <input
-                    type="date"
-                    class="form-control"
-                    v-model="jobData.expirationDate"
-                    required
-                  />
-                  <div class="invalid-feedback">
-                    Please select an expiration date.
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-medium"
-                    >Job Level <span class="text-danger">*</span></label
-                  >
-                  <select
-                    class="form-select"
-                    v-model="jobData.jobLevel"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option
-                      v-for="level in jobLevels"
-                      :key="level"
-                      :value="level"
-                    >
-                      {{ level }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">Please select a job level.</div>
-                </div>
-              </div>
             </div>
             <div class="mb-4 border rounded p-4 bg-light">
               <h5 class="mb-3">Location</h5>
-              <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-medium"
-                    >Country <span class="text-danger">*</span></label
-                  >
-                  <select
-                    class="form-select"
-                    v-model="jobData.country"
-                    @change="onCountryChange"
-                    required
-                    :disabled="jobData.isRemote"
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option
-                      v-for="country in countries"
-                      :key="country"
-                      :value="country"
-                    >
-                      {{ country }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">Please select a country.</div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-medium"
-                    >City <span class="text-danger">*</span></label
-                  >
-                  <select
-                    class="form-select"
-                    v-model="jobData.city"
-                    :disabled="!jobData.country || jobData.isRemote"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option
-                      v-for="city in availableCities"
-                      :key="city"
-                      :value="city"
-                    >
-                      {{ city }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">Please select a city.</div>
-                </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium">
+                  Location <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="jobData.location"
+                  :disabled="jobData.is_remote"
+                  required
+                />
+                <div class="invalid-feedback">Please enter a location.</div>
               </div>
               <div class="form-check mt-2">
                 <input
                   class="form-check-input"
                   type="checkbox"
-                  v-model="jobData.isRemote"
+                  v-model="jobData.is_remote"
                   id="remotePosition"
                   @change="handleRemoteChange"
                 />
@@ -331,7 +176,7 @@
               <textarea
                 class="form-control"
                 rows="6"
-                v-model="jobData.jobDescription"
+                v-model="jobData.description"
                 placeholder="Add your job description..."
                 required
                 minlength="50"
@@ -341,6 +186,53 @@
               </div>
               <div class="form-text">Minimum 50 characters required.</div>
             </div>
+            <div class="mb-4">
+              <h5 class="mb-2">
+                Requirements <span class="text-danger">*</span>
+              </h5>
+              <textarea
+                class="form-control"
+                rows="4"
+                v-model="jobData.requirements"
+                placeholder="Add job requirements..."
+                required
+                minlength="20"
+              ></textarea>
+              <div class="invalid-feedback">
+                Please provide job requirements (minimum 20 characters).
+              </div>
+            </div>
+            <div class="mb-4">
+              <h5 class="mb-2">
+                Responsibilities <span class="text-danger">*</span>
+              </h5>
+              <textarea
+                class="form-control"
+                rows="4"
+                v-model="jobData.responsibilities"
+                placeholder="Add job responsibilities..."
+                required
+                minlength="20"
+              ></textarea>
+              <div class="invalid-feedback">
+                Please provide job responsibilities (minimum 20 characters).
+              </div>
+            </div>
+            <div class="mb-4">
+              <label for="deadline" class="form-label fw-medium">
+                Expiration Date <span class="text-danger">*</span>
+              </label>
+              <input
+                type="date"
+                class="form-control"
+                id="deadline"
+                v-model="jobData.deadline"
+                required
+              />
+              <div class="invalid-feedback">
+                Please select an expiration date.
+              </div>
+            </div>
             <div class="d-flex justify-content-between align-items-center">
               <p class="text-danger small mb-0">
                 <span class="text-danger fw-bold">*</span> Required fields
@@ -349,10 +241,16 @@
                 <button
                   type="button"
                   class="btn btn-outline-secondary px-4 me-2"
+                  @click="saveAsDraft"
+                  :disabled="isLoading"
                 >
                   Save Draft
                 </button>
-                <button type="submit" class="btn btn-primary px-4">
+                <button
+                  type="submit"
+                  class="btn btn-primary px-4"
+                  :disabled="isLoading || categories.length === 0"
+                >
                   Post Job
                 </button>
               </div>
@@ -365,159 +263,154 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import axios from "axios";
 import SidebarComponent from "./SidebarComponent.vue";
+import { useAuthStore } from "../../services/authStore";
 
+const router = useRouter();
+const authStore = useAuthStore();
 const jobForm = ref(null);
-const formSubmitted = ref(false);
+const isLoading = ref(false);
+const loadingMessage = ref("Loading categories...");
+const error = ref(null);
+const categories = ref([]);
 
 const jobData = reactive({
-  jobTitle: "",
-  tags: [],
-  jobRole: "",
-  minSalary: "",
-  maxSalary: "",
-  salaryType: "",
-  education: "",
-  experience: "",
-  jobType: "",
-  vacancies: "",
-  expirationDate: "",
-  jobLevel: "",
-  country: "",
-  city: "",
-  isRemote: false,
+  category_id: "",
+  title: "",
+  description: "",
+  requirements: "",
+  responsibilities: "",
   benefits: [],
-  jobDescription: "",
+  work_type: "",
+  location: "",
+  min_salary: "",
+  max_salary: "",
+  deadline: "",
+  is_remote: false,
+  status: "published",
 });
-
-const tagInput = ref("");
-const addTag = () => {
-  if (tagInput.value.trim()) {
-    jobData.tags.push(tagInput.value.trim());
-    tagInput.value = "";
-  }
-};
-
-const removeTag = (index) => jobData.tags.splice(index, 1);
 
 const toggleBenefit = (benefit) => {
   const i = jobData.benefits.indexOf(benefit);
   i === -1 ? jobData.benefits.push(benefit) : jobData.benefits.splice(i, 1);
 };
 
-const onCountryChange = () => {
-  jobData.city = "";
-};
-
 const handleRemoteChange = () => {
-  if (jobData.isRemote) {
-    jobData.country = "";
-    jobData.city = "";
+  if (jobData.is_remote) {
+    jobData.location = "Remote";
+  } else {
+    jobData.location = "";
   }
 };
 
-const validateAndSubmit = () => {
-  formSubmitted.value = true;
-
+const validateAndSubmit = async () => {
   if (jobForm.value && !jobForm.value.checkValidity()) {
     jobForm.value.classList.add("was-validated");
     return;
   }
 
-  if (parseFloat(jobData.maxSalary) < parseFloat(jobData.minSalary)) {
-    alert("Maximum salary cannot be less than minimum salary!");
+  if (parseFloat(jobData.max_salary) < parseFloat(jobData.min_salary)) {
+    error.value = "Maximum salary cannot be less than minimum salary.";
     return;
   }
 
-  submitJob();
+  await submitJob();
 };
 
-const submitJob = () => {
-  console.log("Job Data:", jobData);
+const saveAsDraft = async () => {
+  jobData.status = "draft";
+  await submitJob();
+};
 
-  if (jobForm.value) {
-    jobForm.value.classList.remove("was-validated");
+const submitJob = async () => {
+  try {
+    isLoading.value = true;
+    loadingMessage.value = "Submitting job...";
+    error.value = null;
+
+    const payload = {
+      category_id: jobData.category_id,
+      title: jobData.title,
+      description: jobData.description,
+      responsibilities: jobData.responsibilities,
+      requirements: jobData.requirements,
+      benefits: jobData.benefits.join(", "),
+      work_type: jobData.work_type,
+      location: jobData.is_remote ? "Remote" : jobData.location,
+      min_salary: jobData.min_salary,
+      max_salary: jobData.max_salary,
+      deadline: jobData.deadline,
+      status: jobData.status,
+    };
+
+    const response = await axios.post("/api/addjobs", payload, {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+
+    if (response.status === 201) {
+      alert("Job posted successfully!");
+      router.push("/employer/jobs");
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to post job";
+    console.error("Job submission error:", err);
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = "Loading categories...";
   }
-
-  alert("Job posted successfully!");
 };
 
-onMounted(() => {
+const fetchCategories = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+    console.log("Fetching categories with token:", authStore.token);
+
+    const response = await axios.get("/api/categories", {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+
+    console.log("Categories response:", response.data);
+    categories.value = response.data.data || [];
+    if (categories.value.length === 0) {
+      error.value = "No categories found. Please contact support.";
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to load categories";
+    console.error("Category fetch error:", err);
+    if (err.response?.status === 401) {
+      error.value = "Authentication failed. Please log in again.";
+      authStore.logout();
+      router.push("/login");
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const retryFetchCategories = async () => {
+  await fetchCategories();
+};
+
+onMounted(async () => {
+  if (!authStore.user || !authStore.token) {
+    try {
+      await authStore.fetchUser();
+    } catch (err) {
+      router.push("/login");
+      return;
+    }
+  }
   const date = new Date();
   date.setDate(date.getDate() + 30);
-  jobData.expirationDate = date.toISOString().split("T")[0];
+  jobData.deadline = date.toISOString().split("T")[0];
+  await fetchCategories();
 });
 
-const jobRoles = [
-  "Software Developer",
-  "Product Manager",
-  "UX Designer",
-  "Data Scientist",
-  "Project Manager",
-];
-const salaryTypes = ["Per Year", "Per Month", "Per Week", "Per Hour"];
-const educationLevels = [
-  "High School",
-  "Associate Degree",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "PhD",
-];
-const experienceLevels = [
-  "Entry Level (0-1 years)",
-  "Junior (1-3 years)",
-  "Mid-Level (3-5 years)",
-  "Senior (5-8 years)",
-  "Expert (8+ years)",
-];
-const jobTypes = [
-  "Full-time",
-  "Part-time",
-  "Contract",
-  "Temporary",
-  "Internship",
-];
-const jobLevels = [
-  "Entry",
-  "Junior",
-  "Mid-Level",
-  "Senior",
-  "Manager",
-  "Director",
-  "Executive",
-];
-const countries = [
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Germany",
-  "France",
-  "India",
-];
-const citiesByCountry = {
-  "United States": [
-    "New York",
-    "San Francisco",
-    "Chicago",
-    "Los Angeles",
-    "Seattle",
-  ],
-  "United Kingdom": [
-    "London",
-    "Manchester",
-    "Birmingham",
-    "Edinburgh",
-    "Glasgow",
-  ],
-  Canada: ["Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa"],
-  Australia: ["Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide"],
-  Germany: ["Berlin", "Munich", "Hamburg", "Frankfurt", "Cologne"],
-  France: ["Paris", "Lyon", "Marseille", "Toulouse", "Nice"],
-  India: ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai"],
-};
-const availableCities = computed(() => citiesByCountry[jobData.country] || []);
+const jobTypes = ["remote", "onsite", "hybrid"];
 const availableBenefits = [
   "401k Salary",
   "Distributed Team",
@@ -612,11 +505,6 @@ const availableBenefits = [
   background-color: #198754;
 }
 
-.was-validated .form-check-input:valid ~ .form-check-label,
-.was-validated .form-check-input:invalid ~ .form-check-label {
-  color: inherit;
-}
-
 .was-validated .form-control:valid,
 .was-validated .form-select:valid {
   border-color: #198754;
@@ -646,14 +534,76 @@ textarea.form-control {
   color: #6c757d;
 }
 
+.form-text.text-warning {
+  color: #ffc107;
+}
+
 .form-check-input:checked {
   background-color: #2c7be5;
   border-color: #2c7be5;
 }
 
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2c7be5;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.error-alert {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-alert i {
+  font-size: 1.5rem;
+}
+
+.error-alert button {
+  margin-left: auto;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
-  .row.g-3 > .col-md-4,
-  .row.g-3 > .col-md-6 {
+  .row.g-3 > .col-md-6,
+  .row.g-3 > .col-md-12 {
     margin-bottom: 1rem;
   }
 }

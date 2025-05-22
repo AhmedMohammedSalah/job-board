@@ -113,7 +113,7 @@ const routes = [
     path: "/EmployersDashboard",
     name: "EmployersDashboard",
     component: EmployersDashboard,
-    meta: { requiresAuth: true, role: "employer" },
+    // meta: { requiresAuth: true, role: "employer" },
   },
   {
     path: "/MyJobs",
@@ -125,7 +125,7 @@ const routes = [
     path: "/PostJob",
     name: "PostJob",
     component: PostJob,
-    meta: { requiresAuth: true, role: "employer" },
+    // meta: { requiresAuth: true, role: "employer" },
   },
   // Public job routes
   {

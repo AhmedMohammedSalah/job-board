@@ -4,53 +4,44 @@ import axios from "axios";
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
-    isAuthenticated: false,
-    isLoading: false,
-    error: null,
+    token: localStorage.getItem("token") || null,
   }),
-
   actions: {
     async login(credentials) {
       try {
-        this.isLoading = true;
-        const response = await axios.post("/api/auth/login", credentials);
-        localStorage.setItem("token", response.data.token);
+        const response = await axios.post(
+          "http://localhost:8000/api/auth/login",
+          credentials
+        );
+        this.token = response.data.token;
         this.user = response.data.user;
-        this.isAuthenticated = true;
-        this.error = null;
-      } catch (err) {
-        this.error = err.response?.data?.message || "Login failed";
-        throw err;
-      } finally {
-        this.isLoading = false;
+        localStorage.setItem("token", this.token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
+        return response.data;
+      } catch (error) {
+        throw error.response?.data?.message || "Login failed";
       }
     },
-
-    async logout() {
-      try {
-        await axios.post("/api/auth/logout");
-        localStorage.removeItem("token");
-        this.user = null;
-        this.isAuthenticated = false;
-      } catch (err) {
-        console.error("Logout failed:", err);
-        throw err;
-      }
-    },
-
     async fetchUser() {
       try {
-        this.isLoading = true;
-        const response = await axios.get("/api/auth/user");
+        const response = await axios.get(
+          "http://localhost:8000/api/auth/get_current_user",
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        );
         this.user = response.data;
-        this.isAuthenticated = true;
-        this.error = null;
-      } catch (err) {
-        this.error = err.response?.data?.message || "Failed to fetch user";
-        throw err;
-      } finally {
-        this.isLoading = false;
+        return response.data;
+      } catch (error) {
+        this.logout();
+        throw error.response?.data?.message || "Failed to fetch user";
       }
+    },
+    logout() {
+      this.user = null;
+      this.token = null;
+      localStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"];
     },
   },
 });

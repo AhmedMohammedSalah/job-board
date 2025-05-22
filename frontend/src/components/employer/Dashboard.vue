@@ -8,28 +8,27 @@
 
     <div class="main-content">
       <div class="content-wrapper">
-        <div v-if="employerStore.isLoading" class="loading-overlay">
+        <div v-if="isLoading" class="loading-overlay">
           <div class="loading-spinner"></div>
           <p>Loading dashboard...</p>
         </div>
 
-        <div v-if="employerStore.error" class="error-alert">
+        <div v-if="error" class="error-alert">
           <i class="bi bi-exclamation-circle"></i>
-          <p>{{ employerStore.error }}</p>
-          <button @click="employerStore.fetchDashboardData">Retry</button>
+          <p>{{ error }}</p>
+          <button @click="fetchDashboardData">Retry</button>
         </div>
 
-        <div v-if="!employerStore.isLoading && !employerStore.error">
+        <div v-if="!isLoading && !error">
           <div class="page-header">
             <h1>Hello, {{ user?.name || "Employer" }}</h1>
-
             <p>Here is your daily activities and applications</p>
           </div>
 
           <div class="stats-container">
             <div class="stats-card stats-card-blue">
               <div class="stats-info">
-                <h2>{{ employerStore.stats.openJobs }}</h2>
+                <h2>{{ stats.openJobs }}</h2>
                 <p>Open Jobs</p>
               </div>
               <div class="stats-icon stats-icon-blue">
@@ -39,8 +38,8 @@
 
             <div class="stats-card stats-card-yellow">
               <div class="stats-info">
-                <h2>{{ employerStore.stats.savedCandidates }}</h2>
-                <p>Saved Candidates</p>
+                <h2>{{ stats.totalApplications }}</h2>
+                <p>Total Applications</p>
               </div>
               <div class="stats-icon stats-icon-yellow">
                 <i class="bi bi-person"></i>
@@ -65,10 +64,10 @@
                 <div class="col-actions">ACTIONS</div>
               </div>
 
-              <div v-if="employerStore.jobs.length === 0" class="no-jobs">
+              <div v-if="jobs.length === 0" class="no-jobs">
                 <p>
                   No jobs posted yet.
-                  <router-link to="/employer/jobs/create"
+                  <router-link to="/employer/post-job"
                     >Create your first job</router-link
                   >
                 </p>
@@ -76,46 +75,36 @@
 
               <div class="table-body">
                 <div
-                  v-for="(job, index) in employerStore.jobs"
+                  v-for="job in jobs"
                   :key="job.id"
                   :class="[
                     'job-row',
-                    { 'selected-job': job.id === employerStore.selectedJob },
+                    { 'selected-job': job.id === selectedJobId },
                   ]"
                 >
                   <div class="col-job">
                     <h3>{{ job.title }}</h3>
-                    <p>{{ job.job_type }} • {{ job.timeRemaining }}</p>
+                    <p>
+                      {{ job.employment_type || "N/A" }} •
+                      {{ formatTimeRemaining(job.created_at) }}
+                    </p>
                   </div>
                   <div class="col-status">
-                    <span
-                      :class="[
-                        'status-badge',
-                        job.status === 'Active'
-                          ? 'status-active'
-                          : 'status-expired',
-                      ]"
-                    >
+                    <span :class="['status-badge', getStatusClass(job.status)]">
                       <span
-                        :class="[
-                          'status-dot',
-                          job.status === 'Active'
-                            ? 'status-dot-active'
-                            : 'status-dot-expired',
-                        ]"
+                        :class="['status-dot', getStatusClass(job.status)]"
                       ></span>
-                      {{ job.status }}
+                      {{
+                        job.status.charAt(0).toUpperCase() + job.status.slice(1)
+                      }}
                     </span>
                   </div>
                   <div class="col-applications">
                     <i class="bi bi-people"></i>
-                    <span>{{ job.applications_count }} Applications</span>
+                    <span>{{ job.applications_count || 0 }} Applications</span>
                   </div>
                   <div class="col-actions">
-                    <button
-                      class="btn-view"
-                      @click="employerStore.showApplications(job.id)"
-                    >
+                    <button class="btn-view" @click="showApplications(job.id)">
                       View Applications
                     </button>
                     <button class="btn-menu" @click="toggleJobMenu(job.id)">
@@ -123,9 +112,7 @@
                     </button>
 
                     <div
-                      v-if="
-                        job.id === employerStore.selectedJob && showActionMenu
-                      "
+                      v-if="job.id === selectedJobId && showActionMenu"
                       class="action-menu"
                     >
                       <ul>
@@ -136,16 +123,9 @@
                           <i class="bi bi-eye"></i>
                           View Detail
                         </li>
-                        <li
-                          class="menu-item"
-                          @click="employerStore.toggleJobStatus(job.id)"
-                        >
+                        <li class="menu-item" @click="toggleJobStatus(job.id)">
                           <i class="bi bi-check-circle"></i>
-                          {{
-                            job.status === "Active"
-                              ? "Mark as expired"
-                              : "Reactivate"
-                          }}
+                          {{ job.is_active ? "Mark as Expired" : "Reactivate" }}
                         </li>
                       </ul>
                     </div>
@@ -155,65 +135,81 @@
             </div>
           </div>
 
-          <div
-            v-if="employerStore.showApplicationsPanel"
-            class="applications-panel"
-          >
+          <div v-if="showApplicationsPanel" class="applications-panel">
             <div class="applications-header">
-              <h2>
-                Applications for {{ employerStore.selectedJobDetails?.title }}
-              </h2>
-              <button
-                class="close-btn"
-                @click="employerStore.closeApplications"
-              >
+              <h2>Applications for {{ selectedJobDetails?.title }}</h2>
+              <button class="close-btn" @click="closeApplications">
                 <i class="bi bi-x"></i>
               </button>
             </div>
             <div class="applications-content">
-              <div
-                v-for="(applicant, index) in employerStore.selectedJobDetails
-                  ?.applicants || []"
-                :key="index"
-                class="applicant-card"
-              >
-                <div class="applicant-info">
-                  <div class="applicant-avatar">
-                    <i class="bi bi-person-circle"></i>
-                  </div>
-                  <div class="applicant-details">
-                    <h3>{{ applicant.name }}</h3>
-                    <p>{{ applicant.position }}</p>
-                    <div class="applicant-skills">
-                      <span
-                        v-for="(skill, idx) in applicant.skills"
-                        :key="idx"
-                        class="skill-tag"
-                      >
-                        {{ skill }}
-                      </span>
+              <div v-if="loadingApplications" class="loading-applications">
+                <div class="loading-spinner"></div>
+                <p>Loading applications...</p>
+              </div>
+
+              <div v-else>
+                <div
+                  v-for="applicant in selectedJobDetails?.applications || []"
+                  :key="applicant.id"
+                  class="applicant-card"
+                >
+                  <div class="applicant-info">
+                    <div class="applicant-avatar">
+                      <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="applicant-details">
+                      <h3>{{ applicant.user?.name || "N/A" }}</h3>
+                      <p>{{ applicant.user?.title || "Job Seeker" }}</p>
+                      <div class="application-meta">
+                        <small
+                          >Applied:
+                          {{ formatDate(applicant.created_at) }}</small
+                        >
+                        <span
+                          :class="[
+                            'status-badge',
+                            `status-${applicant.status}`,
+                          ]"
+                        >
+                          {{
+                            applicant.status.charAt(0).toUpperCase() +
+                            applicant.status.slice(1)
+                          }}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  <div class="applicant-actions">
+                    <button
+                      class="btn-review"
+                      @click="reviewApplication(applicant)"
+                    >
+                      Review
+                    </button>
+                    <button
+                      class="btn-contact"
+                      @click="contactApplicant(applicant)"
+                    >
+                      Contact
+                    </button>
+                  </div>
                 </div>
-                <div class="applicant-actions">
-                  <button class="btn-review">Review</button>
-                  <button class="btn-contact">Contact</button>
+
+                <div
+                  v-if="selectedJobDetails?.applications?.length === 0"
+                  class="no-applicants"
+                >
+                  No applications available to display
                 </div>
-              </div>
-              <div
-                v-if="
-                  employerStore.selectedJobDetails?.applicants?.length === 0
-                "
-                class="no-applicants"
-              >
-                No applications available to display
               </div>
             </div>
           </div>
+
           <div
-            v-if="employerStore.showApplicationsPanel"
+            v-if="showApplicationsPanel"
             class="overlay"
-            @click="employerStore.closeApplications"
+            @click="closeApplications"
           ></div>
         </div>
       </div>
@@ -223,43 +219,187 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useEmployerStore } from "../../services/employerStore";
 import { useAuthStore } from "../../services/authStore";
+import { useRouter } from "vue-router";
 import SidebarComponent from "./SidebarComponent.vue";
+import axios from "axios";
 
-const employerStore = useEmployerStore();
 const authStore = useAuthStore();
-const showActionMenu = ref(false);
+const router = useRouter();
 
-// Properly imported computed
+const isLoading = ref(false);
+const error = ref(null);
+const jobs = ref([]);
+const stats = ref({
+  openJobs: 0,
+  totalApplications: 0,
+});
+const showActionMenu = ref(false);
+const selectedJobId = ref(null);
+const showApplicationsPanel = ref(false);
+const selectedJobDetails = ref(null);
+const loadingApplications = ref(false);
+
 const user = computed(() => authStore.user);
 
-// Fetch data when component mounts
-onMounted(() => {
-  employerStore.fetchDashboardData();
-});
+const fetchDashboardData = async () => {
+  // if (!authStore.token) {
+  //   router.push("/login");
+  //   return;
+  // }
+
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const response = await axios.get("/api/jobs", {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+
+    jobs.value = response.data.data || [];
+
+    stats.value = {
+      openJobs: jobs.value.filter(
+        (job) => job.status === "published" || job.is_active
+      ).length,
+      totalApplications: jobs.value.reduce(
+        (sum, job) => sum + (job.applications_count || 0),
+        0
+      ),
+    };
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Failed to load dashboard data";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const showApplications = async (jobId) => {
+  loadingApplications.value = true;
+  showApplicationsPanel.value = true;
+
+  try {
+    const response = await axios.get(`/api/jobs/${jobId}/applications`, {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+
+    const job = jobs.value.find((j) => j.id == jobId);
+    selectedJobDetails.value = {
+      title: job?.title || "Job",
+      applications: response.data.data || [],
+    };
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to load applications";
+  } finally {
+    loadingApplications.value = false;
+  }
+};
+
+const toggleJobStatus = async (jobId) => {
+  try {
+    await axios.patch(
+      `/api/jobs/${jobId}/toggle-active`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${authStore.token}` },
+      }
+    );
+
+    const job = jobs.value.find((j) => j.id == jobId);
+    if (job) {
+      job.is_active = !job.is_active;
+      job.status = job.is_active ? "published" : "expired";
+    }
+
+    stats.value.openJobs = jobs.value.filter(
+      (job) => job.status === "published" || job.is_active
+    ).length;
+    showActionMenu.value = false;
+    selectedJobId.value = null;
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to update job status";
+  }
+};
+
+const reviewApplication = (applicant) => {
+  router.push(`/employer/applications/${applicant.id}`);
+};
+
+const contactApplicant = (applicant) => {
+  window.location.href = `mailto:${applicant.user.email}`;
+};
+
+const closeApplications = () => {
+  showApplicationsPanel.value = false;
+  selectedJobDetails.value = null;
+};
+
+const handleNavigation = (index) => {
+  const routes = [
+    "/employer/dashboard",
+    "/employer/jobs",
+    "/employer/post-job",
+  ];
+  router.push(routes[index]);
+};
+
+const handleLogout = async () => {
+  await authStore.logout();
+  router.push("/login");
+};
 
 const toggleJobMenu = (jobId) => {
-  if (employerStore.selectedJob === jobId && showActionMenu.value) {
-    showActionMenu.value = false;
+  if (selectedJobId.value === jobId) {
+    showActionMenu.value = !showActionMenu.value;
   } else {
-    employerStore.setSelectedJob(jobId);
+    selectedJobId.value = jobId;
     showActionMenu.value = true;
   }
 };
 
-const handleNavigation = (route) => {
-  console.log(`Navigating to: ${route}`);
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 };
 
-const handleLogout = async () => {
-  try {
-    await authStore.logout();
-    window.location.href = "/login";
-  } catch (err) {
-    console.error("Error logging out:", err);
+const formatTimeRemaining = (createdAt) => {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffDays = Math.ceil((now - created) / (1000 * 60 * 60 * 24));
+  return `${diffDays} days ago`;
+};
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case "published":
+    case "active":
+      return "status-active";
+    case "draft":
+      return "status-draft";
+    case "expired":
+    case "rejected":
+      return "status-expired";
+    case "pending":
+      return "status-pending";
+    default:
+      return "status-pending";
   }
 };
+
+onMounted(async () => {
+  if (!authStore.user) {
+    try {
+      await authStore.fetchUser();
+    } catch (err) {
+      router.push("/login");
+    }
+  }
+  fetchDashboardData();
+});
 </script>
 
 <style scoped>
@@ -269,7 +409,6 @@ const handleLogout = async () => {
   background-color: #f8f9fa;
 }
 
-/* Main Content Styles */
 .main-content {
   flex: 1;
   overflow: auto;
@@ -445,6 +584,14 @@ const handleLogout = async () => {
   color: #dc3545;
 }
 
+.status-pending {
+  color: #ffc107;
+}
+
+.status-draft {
+  color: #6c757d;
+}
+
 .status-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -452,12 +599,20 @@ const handleLogout = async () => {
   margin-right: 0.25rem;
 }
 
-.status-dot-active {
+.status-dot.status-active {
   background-color: #28a745;
 }
 
-.status-dot-expired {
+.status-dot.status-expired {
   background-color: #dc3545;
+}
+
+.status-dot.status-pending {
+  background-color: #ffc107;
+}
+
+.status-dot.status-draft {
+  background-color: #6c757d;
 }
 
 .col-applications {
@@ -535,16 +690,11 @@ const handleLogout = async () => {
   background-color: #f8f9fa;
 }
 
-.menu-item-blue {
-  color: #2c7be5;
-}
-
 .menu-item i {
   margin-right: 0.5rem;
   font-size: 0.75rem;
 }
 
-/* Applications Panel Styles */
 .applications-panel {
   position: fixed;
   top: 0;
@@ -589,6 +739,13 @@ const handleLogout = async () => {
   padding: 1rem;
 }
 
+.loading-applications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
 .applicant-card {
   background-color: #f8f9fa;
   border-radius: 0.5rem;
@@ -631,18 +788,39 @@ const handleLogout = async () => {
   margin-bottom: 0.5rem;
 }
 
-.applicant-skills {
+.application-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.skill-tag {
-  background-color: #e9f0ff;
-  color: #2c7be5;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 1rem;
+.application-meta small {
+  color: #6c757d;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-accepted {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-shortlisted {
+  background-color: #e7f3fe;
+  color: #004085;
+}
+
+.status-hired {
+  background-color: #d1ecf1;
+  color: #0c5460;
 }
 
 .applicant-actions {
@@ -687,6 +865,7 @@ const handleLogout = async () => {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
 }
+
 .loading-overlay {
   position: fixed;
   top: 0;

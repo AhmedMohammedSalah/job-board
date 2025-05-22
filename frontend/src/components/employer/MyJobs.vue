@@ -2,27 +2,59 @@
   <div class="d-flex">
     <SidebarComponent />
     <div class="job-list-container">
-      <div class="job-header">
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Loading jobs...</p>
+      </div>
+      <div v-if="error" class="error-alert">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>{{ error }}</p>
+        <button @click="fetchJobs">Retry</button>
+      </div>
+      <div v-if="!isLoading && !error" class="job-header">
         <h4>
           My Jobs <span class="job-count">({{ jobs.length }})</span>
         </h4>
-
         <div class="filter-controls">
           <div class="job-status-filter">
             <span>Job status</span>
             <div class="btn-group">
-              <button class="btn btn-outline-secondary active">All Jobs</button>
               <button
-                class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                :class="[
+                  'btn',
+                  'btn-outline-secondary',
+                  { active: currentFilter === 'all' },
+                ]"
+                @click="filterJobs('all')"
               >
-                <span class="visually-hidden">Toggle Dropdown</span>
+                All Jobs
+              </button>
+              <button
+                :class="[
+                  'btn',
+                  'btn-outline-secondary',
+                  { active: currentFilter === 'published' },
+                ]"
+                @click="filterJobs('published')"
+              >
+                Published
+              </button>
+              <button
+                :class="[
+                  'btn',
+                  'btn-outline-secondary',
+                  { active: currentFilter === 'expired' },
+                ]"
+                @click="filterJobs('expired')"
+              >
+                Expired
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="job-list-table">
+      <div v-if="!isLoading && !error" class="job-list-table">
         <table class="table">
           <thead>
             <tr>
@@ -34,41 +66,50 @@
           </thead>
           <tbody>
             <tr
-              v-for="job in jobs"
+              v-for="job in paginatedJobs"
               :key="job.id"
               :class="{ 'highlighted-row': job.id === selectedJobId }"
             >
               <td class="job-info">
                 <div class="job-title">{{ job.title }}</div>
                 <div class="job-details">
-                  <span>{{ job.type }}</span>
-                  <span v-if="job.days" class="bullet-separator">•</span>
-                  <span v-if="job.days">{{ job.days }} days remaining</span>
-                  <span v-if="job.date" class="bullet-separator">•</span>
-                  <span v-if="job.date">{{ job.date }}</span>
+                  <span>{{ job.employment_type || "N/A" }}</span>
+                  <span v-if="job.closing_date" class="bullet-separator"
+                    >•</span
+                  >
+                  <span v-if="job.closing_date">{{
+                    formatDaysRemaining(job.closing_date)
+                  }}</span>
+                  <span v-if="job.created_at" class="bullet-separator">•</span>
+                  <span v-if="job.created_at">{{
+                    formatDate(job.created_at)
+                  }}</span>
                 </div>
               </td>
               <td class="status-cell">
-                <span :class="['status-badge', job.status.toLowerCase()]">
+                <span :class="['status-badge', getStatusClass(job.status)]">
                   <i
                     :class="[
                       'bi',
-                      job.status === 'Active'
+                      job.is_active
                         ? 'bi-check-circle-fill'
                         : 'bi-x-circle-fill',
                     ]"
                   ></i>
-                  {{ job.status }}
+                  {{ job.status.charAt(0).toUpperCase() + job.status.slice(1) }}
                 </span>
               </td>
               <td class="applications-cell">
                 <span class="applications-count">
                   <i class="bi bi-people-fill"></i>
-                  {{ job.applicationsCount }} Applications
+                  {{ job.applications_count || 0 }} Applications
                 </span>
               </td>
               <td class="actions-cell">
-                <button class="btn btn-primary btn-sm view-applications">
+                <button
+                  class="btn btn-primary btn-sm view-applications"
+                  @click="viewApplications(job.id)"
+                >
                   View Applications
                 </button>
                 <div class="dropdown">
@@ -86,13 +127,6 @@
                     <a
                       href="#"
                       class="dropdown-item"
-                      @click.prevent="promoteJob(job.id)"
-                    >
-                      <i class="bi bi-arrow-up-circle"></i> Promote Job
-                    </a>
-                    <a
-                      href="#"
-                      class="dropdown-item"
                       @click.prevent="viewDetails(job.id)"
                     >
                       <i class="bi bi-eye"></i> View Detail
@@ -102,19 +136,28 @@
                       class="dropdown-item"
                       @click.prevent="toggleJobStatus(job.id)"
                     >
-                      <i class="bi bi-toggle-on"></i> Make it Expire
+                      <i class="bi bi-toggle-on"></i>
+                      {{ job.is_active ? "Mark as Expired" : "Reactivate" }}
                     </a>
                   </div>
                 </div>
+              </td>
+            </tr>
+            <tr v-if="paginatedJobs.length === 0">
+              <td colspan="4" class="no-jobs">
+                No jobs found.
+                <router-link to="/employer/post-job"
+                  >Create a new job</router-link
+                >
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="pagination">
+      <div v-if="!isLoading && !error && jobs.length > 0" class="pagination">
         <ul class="pagination-list">
-          <li class="page-item">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
             <a
               class="page-link"
               href="#"
@@ -127,13 +170,16 @@
           <li
             v-for="page in totalPages"
             :key="page"
-            :class="['page-item', currentPage === page ? 'active' : '']"
+            :class="['page-item', { active: currentPage === page }]"
           >
             <a class="page-link" href="#" @click.prevent="goToPage(page)">
               {{ page < 10 ? "0" + page : page }}
             </a>
           </li>
-          <li class="page-item">
+          <li
+            class="page-item"
+            :class="{ disabled: currentPage === totalPages }"
+          >
             <a
               class="page-link"
               href="#"
@@ -151,174 +197,118 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../../services/authStore";
 import SidebarComponent from "./SidebarComponent.vue";
-const jobs = ref([
-  {
-    id: 1,
-    title: "UI/UX Designer",
-    type: "Full Time",
-    days: 27,
-    date: null,
-    status: "Active",
-    applicationsCount: 798,
-  },
-  {
-    id: 2,
-    title: "Senior UX Designer",
-    type: "Internship",
-    days: 8,
-    date: null,
-    status: "Active",
-    applicationsCount: 185,
-  },
-  {
-    id: 3,
-    title: "Junior Graphic Designer",
-    type: "Full Time",
-    days: 24,
-    date: null,
-    status: "Active",
-    applicationsCount: 563,
-  },
-  {
-    id: 4,
-    title: "Front End Developer",
-    type: "Full Time",
-    days: null,
-    date: "Dec 7, 2019",
-    status: "Expire",
-    applicationsCount: 740,
-  },
-  {
-    id: 5,
-    title: "Techical Support Specialist",
-    type: "Part Time",
-    days: 4,
-    date: null,
-    status: "Active",
-    applicationsCount: 356,
-  },
-  {
-    id: 6,
-    title: "Interaction Designer",
-    type: "Contract Base",
-    days: null,
-    date: "Feb 2, 2019",
-    status: "Expire",
-    applicationsCount: 426,
-  },
-  {
-    id: 7,
-    title: "Software Engineer",
-    type: "Temporary",
-    days: 9,
-    date: null,
-    status: "Active",
-    applicationsCount: 922,
-  },
-  {
-    id: 8,
-    title: "Product Designer",
-    type: "Full Time",
-    days: 7,
-    date: null,
-    status: "Active",
-    applicationsCount: 594,
-  },
-  {
-    id: 9,
-    title: "Project Manager",
-    type: "Full Time",
-    days: null,
-    date: "Dec 4, 2019",
-    status: "Expire",
-    applicationsCount: 196,
-  },
-  {
-    id: 10,
-    title: "Marketing Manager",
-    type: "Full Time",
-    days: 4,
-    date: null,
-    status: "Active",
-    applicationsCount: 462,
-  },
-  {
-    id: 10,
-    title: "Marketing Manager",
-    type: "Full Time",
-    days: 4,
-    date: null,
-    status: "Active",
-    applicationsCount: 462,
-  },
-  {
-    id: 10,
-    title: "Marketing Manager",
-    type: "Full Time",
-    days: 4,
-    date: null,
-    status: "Active",
-    applicationsCount: 462,
-  },
-  {
-    id: 10,
-    title: "Marketing Manager",
-    type: "Full Time",
-    days: 4,
-    date: null,
-    status: "Active",
-    applicationsCount: 462,
-  },
-]);
+import axios from "axios";
 
-const selectedJobId = ref(5);
+const router = useRouter();
+const authStore = useAuthStore();
+
+const jobs = ref([]);
+const selectedJobId = ref(null);
 const activeDropdown = ref(null);
 const currentPage = ref(1);
 const itemsPerPage = 10;
+const totalPages = ref(1);
+const error = ref(null);
+const isLoading = ref(false);
+const currentFilter = ref("all");
 
-const totalPages = computed(() => Math.ceil(jobs.value.length / itemsPerPage));
+const paginatedJobs = computed(() => {
+  let filteredJobs = jobs.value;
+  if (currentFilter.value !== "all") {
+    filteredJobs = jobs.value.filter(
+      (job) => job.status === currentFilter.value
+    );
+  }
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredJobs.slice(start, end);
+});
 
-const toggleDropdown = (jobId) => {
-  if (activeDropdown.value === jobId) {
-    activeDropdown.value = null;
-  } else {
-    activeDropdown.value = jobId;
+const fetchJobs = async () => {
+  if (!authStore.token) {
+    router.push("/login");
+    return;
+  }
+
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const response = await axios.get(`/api/jobs?page=${currentPage.value}`, {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+
+    jobs.value = response.data.data || [];
+    totalPages.value = response.data.last_page || 1;
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to load jobs";
+  } finally {
+    isLoading.value = false;
   }
 };
 
-const promoteJob = (jobId) => {
-  console.log(`Promoting job ID: ${jobId}`);
-  activeDropdown.value = null;
+const filterJobs = (filter) => {
+  currentFilter.value = filter;
+  currentPage.value = 1;
+  fetchJobs();
+};
+
+const toggleDropdown = (jobId) => {
+  activeDropdown.value = activeDropdown.value === jobId ? null : jobId;
 };
 
 const viewDetails = (jobId) => {
-  console.log(`Viewing details for job ID: ${jobId}`);
-  selectedJobId.value = jobId;
+  router.push(`/employer/jobs/${jobId}`);
   activeDropdown.value = null;
 };
 
-const toggleJobStatus = (jobId) => {
-  const job = jobs.value.find((j) => j.id === jobId);
-  if (job) {
-    job.status = job.status === "Active" ? "Expire" : "Active";
+const toggleJobStatus = async (jobId) => {
+  try {
+    await axios.patch(
+      `/api/jobs/${jobId}/toggle-active`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${authStore.token}` },
+      }
+    );
+
+    const job = jobs.value.find((j) => j.id === jobId);
+    if (job) {
+      job.is_active = !job.is_active;
+      job.status = job.is_active ? "published" : "expired";
+    }
+    activeDropdown.value = null;
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to update job status";
   }
+};
+
+const viewApplications = (jobId) => {
+  router.push(`/employer/jobs/${jobId}/applications`);
   activeDropdown.value = null;
 };
 
 const goToPage = (page) => {
-  currentPage.value = page;
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    fetchJobs();
+  }
 };
 
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
+    fetchJobs();
   }
 };
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
+    fetchJobs();
   }
 };
 
@@ -328,7 +318,34 @@ const closeDropdownOnClickOutside = (event) => {
   }
 };
 
-onMounted(() => {
+const formatDaysRemaining = (closingDate) => {
+  const now = new Date();
+  const close = new Date(closingDate);
+  const diffDays = Math.ceil((close - now) / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? `${diffDays} days remaining` : "Expired";
+};
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getStatusClass = (status) => {
+  return status === "published" || status === "active" ? "active" : "expire";
+};
+
+onMounted(async () => {
+  if (!authStore.user) {
+    try {
+      await authStore.fetchUser();
+    } catch (err) {
+      router.push("/login");
+    }
+  }
+  fetchJobs();
   document.addEventListener("click", closeDropdownOnClickOutside);
 });
 
@@ -543,6 +560,12 @@ tbody tr.highlighted-row {
   gap: 5px;
 }
 
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #e9ecef;
+}
+
 .page-item.active .page-link {
   background-color: #3b82f6;
   border-color: #3b82f6;
@@ -563,6 +586,74 @@ tbody tr.highlighted-row {
 .page-link:hover {
   background-color: #e9ecef;
   color: #3b82f6;
+}
+
+.loading-overlay {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.error-alert {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-alert i {
+  font-size: 1.5rem;
+}
+
+.error-alert button {
+  margin-left: auto;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.no-jobs {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.no-jobs a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.no-jobs a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 992px) {
