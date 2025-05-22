@@ -1,259 +1,212 @@
 <template>
-  <div class="d-flex">
-    <SidebarComponent />
-    <div class="container mt-4 flex-grow-1">
-      <div class="card shadow-sm">
-        <div class="card-header bg-white py-3">
-          <h2 class="card-title mb-0">Post a Job</h2>
+  <div class="post-job-container">
+    <SidebarComponent
+      :initialActive="2"
+      @navigate="handleNavigation"
+      @logout="handleLogout"
+    />
+
+    <div class="main-content">
+      <div class="content-wrapper">
+        <div v-if="isLoading" class="loading-overlay">
+          <div class="loading-spinner"></div>
+          <p>Loading...</p>
         </div>
-        <div class="card-body">
-          <div v-if="isLoading" class="loading-overlay">
-            <div class="loading-spinner"></div>
-            <p>{{ loadingMessage }}</p>
+
+        <div v-if="error" class="error-alert">
+          <i class="bi bi-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button @click="fetchCategories">Retry</button>
+        </div>
+
+        <div v-if="!isLoading && !error" class="form-container">
+          <div class="page-header">
+            <h1>Post a New Job</h1>
+            <p>Fill in the details to create a new job listing</p>
           </div>
-          <div v-if="error" class="error-alert">
-            <i class="bi bi-exclamation-circle"></i>
-            <p>{{ error }}</p>
-            <button @click="retryFetchCategories">Retry</button>
-          </div>
-          <form
-            v-if="!isLoading && !error"
-            @submit.prevent="validateAndSubmit"
-            class="needs-validation"
-            novalidate
-            ref="jobForm"
-          >
-            <div class="mb-4">
-              <label for="category" class="form-label fw-medium">
-                Category <span class="text-danger">*</span>
-              </label>
+
+          <form @submit.prevent="submitJob" class="job-form">
+            <div class="form-group">
+              <label for="category_id">Category *</label>
               <select
-                class="form-select"
-                id="category"
-                v-model="jobData.category_id"
+                id="category_id"
+                v-model="form.category_id"
                 required
                 :disabled="categories.length === 0"
               >
-                <option value="" disabled>Select...</option>
+                <option value="">Select a category</option>
                 <option
                   v-for="category in categories"
                   :key="category.id"
-                  :value="category.name"
+                  :value="category.id"
                 >
                   {{ category.name }}
                 </option>
               </select>
-              <div class="invalid-feedback">Please select a category.</div>
-              <div
-                v-if="categories.length === 0"
-                class="form-text text-warning"
-              >
-                No categories available. Contact support to add categories.
-              </div>
+              <span v-if="errors.category_id" class="error-text">{{
+                errors.category_id
+              }}</span>
             </div>
-            <div class="mb-4">
-              <label for="jobTitle" class="form-label fw-medium">
-                Job Title <span class="text-danger">*</span>
-              </label>
+
+            <div class="form-group">
+              <label for="title">Job Title *</label>
               <input
+                id="title"
+                v-model="form.title"
                 type="text"
-                class="form-control"
-                id="jobTitle"
-                placeholder="Add job title, role, vacancies etc"
-                v-model="jobData.title"
+                maxlength="255"
                 required
+                placeholder="e.g., Senior Software Engineer"
               />
-              <div class="invalid-feedback">Please provide a job title.</div>
+              <span v-if="errors.title" class="error-text">{{
+                errors.title
+              }}</span>
             </div>
-            <div class="mb-4">
-              <label class="form-label fw-medium">
-                Salary <span class="text-danger">*</span>
-              </label>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <div class="input-group has-validation">
-                    <span class="input-group-text">Min</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      v-model="jobData.min_salary"
-                      required
-                      min="0"
-                    />
-                    <span class="input-group-text">USD</span>
-                    <div class="invalid-feedback">
-                      Please provide a minimum salary.
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="input-group has-validation">
-                    <span class="input-group-text">Max</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      v-model="jobData.max_salary"
-                      required
-                      min="0"
-                    />
-                    <span class="input-group-text">USD</span>
-                    <div class="invalid-feedback">
-                      Please provide a maximum salary.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="mb-4 border rounded p-4">
-              <h5 class="mb-3">Job Type</h5>
-              <div class="row g-3">
-                <div class="col-md-12">
-                  <select
-                    class="form-select"
-                    v-model="jobData.work_type"
-                    required
-                  >
-                    <option value="" disabled>Select...</option>
-                    <option v-for="type in jobTypes" :key="type" :value="type">
-                      {{ type.charAt(0).toUpperCase() + type.slice(1) }}
-                    </option>
-                  </select>
-                  <div class="invalid-feedback">Please select a job type.</div>
-                </div>
-              </div>
-            </div>
-            <div class="mb-4 border rounded p-4 bg-light">
-              <h5 class="mb-3">Location</h5>
-              <div class="mb-3">
-                <label class="form-label fw-medium">
-                  Location <span class="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="jobData.location"
-                  :disabled="jobData.is_remote"
-                  required
-                />
-                <div class="invalid-feedback">Please enter a location.</div>
-              </div>
-              <div class="form-check mt-2">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  v-model="jobData.is_remote"
-                  id="remotePosition"
-                  @change="handleRemoteChange"
-                />
-                <label class="form-check-label" for="remotePosition">
-                  Fully Remote Position - Worldwide
-                </label>
-              </div>
-            </div>
-            <div class="mb-4 border rounded p-4">
-              <h5 class="mb-3">Job Benefits</h5>
-              <div class="d-flex flex-wrap gap-2 mb-3">
-                <button
-                  v-for="benefit in availableBenefits"
-                  :key="benefit"
-                  type="button"
-                  class="btn btn-sm"
-                  :class="
-                    jobData.benefits.includes(benefit)
-                      ? 'btn-primary'
-                      : 'btn-outline-secondary'
-                  "
-                  @click="toggleBenefit(benefit)"
-                >
-                  {{ benefit }}
-                </button>
-              </div>
-            </div>
-            <div class="mb-4">
-              <h5 class="mb-2">
-                Job Description <span class="text-danger">*</span>
-              </h5>
+
+            <div class="form-group">
+              <label for="description">Description *</label>
               <textarea
-                class="form-control"
-                rows="6"
-                v-model="jobData.description"
-                placeholder="Add your job description..."
+                id="description"
+                v-model="form.description"
                 required
-                minlength="50"
+                placeholder="Describe the job role"
               ></textarea>
-              <div class="invalid-feedback">
-                Please provide a job description (minimum 50 characters).
-              </div>
-              <div class="form-text">Minimum 50 characters required.</div>
+              <span v-if="errors.description" class="error-text">{{
+                errors.description
+              }}</span>
             </div>
-            <div class="mb-4">
-              <h5 class="mb-2">
-                Requirements <span class="text-danger">*</span>
-              </h5>
+
+            <div class="form-group">
+              <label for="responsibilities">Responsibilities *</label>
               <textarea
-                class="form-control"
-                rows="4"
-                v-model="jobData.requirements"
-                placeholder="Add job requirements..."
+                id="responsibilities"
+                v-model="form.responsibilities"
                 required
-                minlength="20"
+                placeholder="List key responsibilities"
               ></textarea>
-              <div class="invalid-feedback">
-                Please provide job requirements (minimum 20 characters).
-              </div>
+              <span v-if="errors.responsibilities" class="error-text">{{
+                errors.responsibilities
+              }}</span>
             </div>
-            <div class="mb-4">
-              <h5 class="mb-2">
-                Responsibilities <span class="text-danger">*</span>
-              </h5>
+
+            <div class="form-group">
+              <label for="requirements">Requirements *</label>
               <textarea
-                class="form-control"
-                rows="4"
-                v-model="jobData.responsibilities"
-                placeholder="Add job responsibilities..."
+                id="requirements"
+                v-model="form.requirements"
                 required
-                minlength="20"
+                placeholder="List required skills and qualifications"
               ></textarea>
-              <div class="invalid-feedback">
-                Please provide job responsibilities (minimum 20 characters).
-              </div>
+              <span v-if="errors.requirements" class="error-text">{{
+                errors.requirements
+              }}</span>
             </div>
-            <div class="mb-4">
-              <label for="deadline" class="form-label fw-medium">
-                Expiration Date <span class="text-danger">*</span>
-              </label>
+
+            <div class="form-group">
+              <label for="benefits">Benefits</label>
+              <textarea
+                id="benefits"
+                v-model="form.benefits"
+                placeholder="e.g., Health insurance, remote work"
+              ></textarea>
+              <span v-if="errors.benefits" class="error-text">{{
+                errors.benefits
+              }}</span>
+            </div>
+
+            <div class="form-group">
+              <label for="work_type">Work Type *</label>
+              <select id="work_type" v-model="form.work_type" required>
+                <option value="">Select work type</option>
+                <option value="remote">Remote</option>
+                <option value="onsite">Onsite</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+              <span v-if="errors.work_type" class="error-text">{{
+                errors.work_type
+              }}</span>
+            </div>
+
+            <div class="form-group">
+              <label for="location">Location *</label>
               <input
-                type="date"
-                class="form-control"
+                id="location"
+                v-model="form.location"
+                type="text"
+                required
+                placeholder="e.g., New York, NY"
+              />
+              <span v-if="errors.location" class="error-text">{{
+                errors.location
+              }}</span>
+            </div>
+
+            <div class="form-group">
+              <label for="min_salary">Minimum Salary</label>
+              <input
+                id="min_salary"
+                v-model.number="form.min_salary"
+                type="number"
+                min="0"
+                placeholder="e.g., 50000"
+              />
+              <span v-if="errors.min_salary" class="error-text">{{
+                errors.min_salary
+              }}</span>
+            </div>
+
+            <div class="form-group">
+              <label for="max_salary">Maximum Salary</label>
+              <input
+                id="max_salary"
+                v-model.number="form.max_salary"
+                type="number"
+                min="0"
+                placeholder="e.g., 70000"
+              />
+              <span v-if="errors.max_salary" class="error-text">{{
+                errors.max_salary
+              }}</span>
+            </div>
+
+            <div class="form-group">
+              <label for="deadline">Application Deadline *</label>
+              <input
                 id="deadline"
-                v-model="jobData.deadline"
+                v-model="form.deadline"
+                type="date"
                 required
               />
-              <div class="invalid-feedback">
-                Please select an expiration date.
-              </div>
+              <span v-if="errors.deadline" class="error-text">{{
+                errors.deadline
+              }}</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <p class="text-danger small mb-0">
-                <span class="text-danger fw-bold">*</span> Required fields
-              </p>
-              <div>
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary px-4 me-2"
-                  @click="saveAsDraft"
-                  :disabled="isLoading"
-                >
-                  Save Draft
-                </button>
-                <button
-                  type="submit"
-                  class="btn btn-primary px-4"
-                  :disabled="isLoading || categories.length === 0"
-                >
-                  Post Job
-                </button>
-              </div>
+
+            <div class="form-group">
+              <label for="status">Status</label>
+              <select id="status" v-model="form.status">
+                <option value="">Select status</option>
+                <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="published">Published</option>
+                <option value="expired">Expired</option>
+              </select>
+              <span v-if="errors.status" class="error-text">{{
+                errors.status
+              }}</span>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-submit" :disabled="isSubmitting">
+                {{ isSubmitting ? "Posting..." : "Post Job" }}
+              </button>
+              <button
+                type="button"
+                class="btn-cancel"
+                @click="$router.push('/employer/jobs')"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
@@ -263,292 +216,378 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
 import SidebarComponent from "./SidebarComponent.vue";
-import { useAuthStore } from "../../services/authStore";
+import axios from "axios";
+
+// Configure axios with auth
+const axiosInstance = axios.create({
+  baseURL: "/api",
+});
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auth management
+const token = ref(localStorage.getItem("auth_token") || null);
+const setToken = (newToken) => {
+  token.value = newToken;
+  localStorage.setItem("auth_token", newToken);
+};
+const clearToken = () => {
+  token.value = null;
+  localStorage.removeItem("auth_token");
+};
 
 const router = useRouter();
-const authStore = useAuthStore();
-const jobForm = ref(null);
+
 const isLoading = ref(false);
-const loadingMessage = ref("Loading categories...");
 const error = ref(null);
+const isSubmitting = ref(false);
 const categories = ref([]);
 
-const jobData = reactive({
+// Reactive form data based on backend validation rules
+const form = ref({
   category_id: "",
   title: "",
   description: "",
-  requirements: "",
   responsibilities: "",
-  benefits: [],
+  requirements: "",
+  benefits: null,
   work_type: "",
   location: "",
-  min_salary: "",
-  max_salary: "",
+  min_salary: null,
+  max_salary: null,
   deadline: "",
-  is_remote: false,
-  status: "published",
+  status: "",
 });
 
-const toggleBenefit = (benefit) => {
-  const i = jobData.benefits.indexOf(benefit);
-  i === -1 ? jobData.benefits.push(benefit) : jobData.benefits.splice(i, 1);
+// Validation errors
+const errors = ref({});
+
+const fetchCategories = async () => {
+  console.log("Fetching categories...");
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const response = await axiosInstance.get("/categories");
+    console.log("Categories response:", response.data);
+    categories.value = response.data.data || [];
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to load categories";
+    console.error("Fetch categories error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
+  } finally {
+    isLoading.value = false;
+  }
 };
 
-const handleRemoteChange = () => {
-  if (jobData.is_remote) {
-    jobData.location = "Remote";
+const validateForm = () => {
+  errors.value = {};
+
+  if (!form.value.category_id) {
+    errors.value.category_id = "Category is required";
+  }
+  if (!form.value.title) {
+    errors.value.title = "Job title is required";
+  } else if (form.value.title.length > 255) {
+    errors.value.title = "Job title must not exceed 255 characters";
+  }
+  if (!form.value.description) {
+    errors.value.description = "Description is required";
+  }
+  if (!form.value.responsibilities) {
+    errors.value.responsibilities = "Responsibilities are required";
+  }
+  if (!form.value.requirements) {
+    errors.value.requirements = "Requirements are required";
+  }
+  if (!form.value.work_type) {
+    errors.value.work_type = "Work type is required";
+  } else if (!["remote", "onsite", "hybrid"].includes(form.value.work_type)) {
+    errors.value.work_type = "Invalid work type";
+  }
+  if (!form.value.location) {
+    errors.value.location = "Location is required";
+  }
+  if (
+    form.value.min_salary !== null &&
+    (isNaN(form.value.min_salary) || form.value.min_salary < 0)
+  ) {
+    errors.value.min_salary = "Minimum salary must be a valid number";
+  }
+  if (
+    form.value.max_salary !== null &&
+    (isNaN(form.value.max_salary) || form.value.max_salary < 0)
+  ) {
+    errors.value.max_salary = "Maximum salary must be a valid number";
+  }
+  if (form.value.min_salary !== null && form.value.max_salary !== null) {
+    if (form.value.max_salary < form.value.min_salary) {
+      errors.value.max_salary =
+        "Maximum salary must be greater than or equal to minimum salary";
+    }
+  }
+  if (!form.value.deadline) {
+    errors.value.deadline = "Deadline is required";
   } else {
-    jobData.location = "";
+    const deadlineDate = new Date(form.value.deadline);
+    if (isNaN(deadlineDate.getTime())) {
+      errors.value.deadline = "Invalid date format";
+    }
   }
-};
-
-const validateAndSubmit = async () => {
-  if (jobForm.value && !jobForm.value.checkValidity()) {
-    jobForm.value.classList.add("was-validated");
-    return;
-  }
-
-  if (parseFloat(jobData.max_salary) < parseFloat(jobData.min_salary)) {
-    error.value = "Maximum salary cannot be less than minimum salary.";
-    return;
+  if (
+    form.value.status &&
+    !["draft", "pending", "published", "expired"].includes(form.value.status)
+  ) {
+    errors.value.status = "Invalid status";
   }
 
-  await submitJob();
-};
-
-const saveAsDraft = async () => {
-  jobData.status = "draft";
-  await submitJob();
+  return Object.keys(errors.value).length === 0;
 };
 
 const submitJob = async () => {
+  console.log("Submitting job:", form.value);
+  if (!validateForm()) {
+    console.error("Validation failed:", errors.value);
+    return;
+  }
+
+  isSubmitting.value = true;
+  error.value = null;
+
   try {
-    isLoading.value = true;
-    loadingMessage.value = "Submitting job...";
-    error.value = null;
-
-    const payload = {
-      category_id: jobData.category_id,
-      title: jobData.title,
-      description: jobData.description,
-      responsibilities: jobData.responsibilities,
-      requirements: jobData.requirements,
-      benefits: jobData.benefits.join(", "),
-      work_type: jobData.work_type,
-      location: jobData.is_remote ? "Remote" : jobData.location,
-      min_salary: jobData.min_salary,
-      max_salary: jobData.max_salary,
-      deadline: jobData.deadline,
-      status: jobData.status,
-    };
-
-    const response = await axios.post(
-      "http://localhost:8000/api/addjobs",
-      payload,
-      {
-        headers: { Authorization: `Bearer ${authStore.token}` },
-      }
-    );
-
-    if (response.status === 201) {
-      alert("Job posted successfully!");
-      router.push("/employer/jobs");
-    }
+    const response = await axiosInstance.post("/addjobs", {
+      category_id: form.value.category_id,
+      title: form.value.title,
+      description: form.value.description,
+      responsibilities: form.value.responsibilities,
+      requirements: form.value.requirements,
+      benefits: form.value.benefits || null,
+      work_type: form.value.work_type,
+      location: form.value.location,
+      min_salary: form.value.min_salary || null,
+      max_salary: form.value.max_salary || null,
+      deadline: form.value.deadline,
+      status: form.value.status || null,
+    });
+    console.log("Submit job response:", response.data);
+    router.push("/employer/jobs");
   } catch (err) {
     error.value = err.response?.data?.message || "Failed to post job";
-    console.error("Job submission error:", err);
-  } finally {
-    isLoading.value = false;
-    loadingMessage.value = "Loading categories...";
-  }
-};
-
-const fetchCategories = async () => {
-  try {
-    isLoading.value = true;
-    error.value = null;
-    console.log("Fetching categories with token:", authStore.token);
-
-    const response = await axios.get("http://localhost:8000/api/categories", {
-      headers: { Authorization: `Bearer ${authStore.token}` },
-    });
-
-    console.log("Categories response:", response.data);
-    categories.value = response.data || [];
-    if (categories.value.length === 0) {
-      error.value = "No categories found. Please contact support.";
+    console.error("Submit job error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+      if (err.response.data.errors) {
+        errors.value = err.response.data.errors;
+      }
     }
-  } catch (err) {
-    error.value = err.response?.data?.message || "Failed to load categories";
-    console.error("Category fetch error:", err);
     if (err.response?.status === 401) {
-      error.value = "Authentication failed. Please log in again.";
-      authStore.logout();
+      clearToken();
       router.push("/login");
     }
   } finally {
-    isLoading.value = false;
+    isSubmitting.value = false;
   }
 };
 
-const retryFetchCategories = async () => {
-  await fetchCategories();
+const handleNavigation = (index) => {
+  console.log("Handling navigation with index:", index);
+  const routes = [
+    "/employer/dashboard",
+    "/employer/jobs",
+    "/employer/post-job",
+  ];
+
+  if (index < 0 || index >= routes.length) {
+    console.error("Invalid navigation index:", index);
+    error.value = "Invalid navigation option selected";
+    return;
+  }
+
+  const targetRoute = routes[index];
+  console.log("Navigating to:", targetRoute);
+
+  try {
+    router.push(targetRoute).catch((err) => {
+      console.error("Router push error:", err);
+      error.value = `Failed to navigate to ${targetRoute}`;
+    });
+  } catch (err) {
+    console.error("Navigation error:", err);
+    error.value = "Navigation failed";
+  }
 };
 
-onMounted(async () => {
-  if (!authStore.user || !authStore.token) {
-    try {
-      await authStore.fetchUser();
-    } catch (err) {
-      router.push("/login");
-      return;
-    }
+const handleLogout = () => {
+  console.log("Logging out");
+  clearToken();
+  router.push("/login").catch((err) => {
+    console.error("Logout navigation error:", err);
+    error.value = "Failed to navigate to login";
+  });
+};
+
+onMounted(() => {
+  console.log("PostJob mounted");
+  console.log("Router available:", !!router);
+  console.log("Auth token:", token.value);
+  if (!token.value) {
+    console.warn("No auth token, redirecting to login");
+    router.push("/login");
+  } else {
+    fetchCategories();
   }
-  const date = new Date();
-  date.setDate(date.getDate() + 30);
-  jobData.deadline = date.toISOString().split("T")[0];
-  await fetchCategories();
 });
-
-const jobTypes = ["remote", "onsite", "hybrid"];
-const availableBenefits = [
-  "401k Salary",
-  "Distributed Team",
-  "Async",
-  "Vision Insurance",
-  "Dental Insurance",
-  "Medical Insurance",
-  "Unlimited vacation",
-  "4 day work/week",
-  "401k matching",
-  "Company retreats",
-  "Learning budget",
-  "Free gym membership",
-  "Pay in crypto",
-  "Profit Sharing",
-  "Equity Compensation",
-  "No whiteboard interview",
-  "No politics at work",
-  "We hire old (and young)",
-];
 </script>
 
 <style scoped>
-.card {
-  border: none;
-  border-radius: 8px;
-  overflow: hidden;
+.post-job-container {
+  display: flex;
+  height: 100vh;
+  background-color: #f8f9fa;
 }
 
-.card-header {
-  border-bottom: 1px solid #e9ecef;
+.main-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
 }
 
-.card-title {
-  font-weight: 600;
-  color: #344767;
+.content-wrapper {
+  padding: 1.5rem;
+  position: relative;
 }
 
-.form-label {
-  color: #344767;
-  font-size: 0.875rem;
+.page-header {
+  margin-bottom: 2rem;
 }
 
-.form-control:focus,
-.form-select:focus {
-  border-color: #2c7be5;
-  box-shadow: 0 0 0 0.25rem rgba(44, 123, 229, 0.1);
-}
-
-.btn-primary {
-  background-color: #2c7be5;
-  border-color: #2c7be5;
-}
-
-.btn-primary:hover {
-  background-color: #1a68d1;
-  border-color: #1a68d1;
-}
-
-.btn-outline-secondary {
-  color: #5c6a82;
-  border-color: #5c6a82;
-}
-
-.btn-outline-secondary:hover {
-  background-color: #5c6a82;
-  border-color: #5c6a82;
-  color: white;
-}
-
-.badge {
-  border-radius: 4px;
+.page-header h1 {
+  font-size: 1.25rem;
   font-weight: 500;
+  margin-bottom: 0.25rem;
 }
 
-.form-control.is-invalid,
-.form-select.is-invalid {
-  border-color: #dc3545;
-  padding-right: calc(1.5em + 0.75rem);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right calc(0.375em + 0.1875rem) center;
-  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+.page-header p {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
-.was-validated .form-check-input:invalid {
-  border-color: #dc3545;
+.form-container {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  padding: 1.5rem;
 }
 
-.was-validated .form-check-input:valid {
-  border-color: #198754;
-  background-color: #198754;
+.job-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.was-validated .form-control:valid,
-.was-validated .form-select:valid {
-  border-color: #198754;
-  padding-right: calc(1.5em + 0.75rem);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right calc(0.375em + 0.1875rem) center;
-  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+.form-group {
+  display: flex;
+  flex-direction: column;
 }
 
-.input-group .form-control.is-invalid,
-.input-group .form-select.is-invalid {
-  z-index: 1;
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.25rem;
 }
 
-.input-group .form-control.is-invalid:focus,
-.input-group .form-select.is-invalid:focus {
-  z-index: 3;
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #495057;
 }
 
-textarea.form-control {
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #2c7be5;
+  box-shadow: 0 0 0 0.2rem rgba(44, 123, 229, 0.25);
+}
+
+.form-group textarea {
+  min-height: 100px;
   resize: vertical;
 }
 
-.form-text {
+.form-group input[type="date"] {
+  width: 200px;
+}
+
+.error-text {
+  color: #dc3545;
   font-size: 0.75rem;
-  color: #6c757d;
+  margin-top: 0.25rem;
 }
 
-.form-text.text-warning {
-  color: #ffc107;
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.form-check-input:checked {
+.btn-submit {
   background-color: #2c7be5;
-  border-color: #2c7be5;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #1a68d1;
+}
+
+.btn-submit:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background-color: #fff;
+  color: #6c757d;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background-color: #f8f9fa;
 }
 
 .loading-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -603,12 +642,5 @@ textarea.form-control {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   cursor: pointer;
-}
-
-@media (max-width: 768px) {
-  .row.g-3 > .col-md-6,
-  .row.g-3 > .col-md-12 {
-    margin-bottom: 1rem;
-  }
 }
 </style>
