@@ -19,6 +19,11 @@ class CommentController extends Controller
 
         return response()->json($comments);
     }
+    public function getAllComments(){
+        // Get all comments with job and user
+        $comments = Comment::all() -> load(['user', 'job']);
+        return response()->json($comments);
+    }
 
     public function store(StoreCommentRequest $request)
     {
@@ -26,7 +31,7 @@ class CommentController extends Controller
             'content' => $request->content,
             'user_id' => Auth::id(),
             'job_id' => $request->job_id,
-            'parent_id' => $request->parent_id ?? null 
+            'parent_id' => $request->parent_id ?? null
         ]);
 
         return response()->json($comment->load('user'));
@@ -41,8 +46,7 @@ class CommentController extends Controller
         }
 
         $comment->update([
-            'content' => $request->content,
-            'is_edited' => true
+            'content' => $request->content
         ]);
 
         return response()->json($comment->load('user'));
@@ -50,9 +54,10 @@ class CommentController extends Controller
 
     public function destroy($id)
     {
+        $user = Auth::user();
         $comment = Comment::findOrFail($id);
 
-        if ($comment->user_id !== Auth::id()) {
+        if ($user->role!="admin" && $comment->user_id !== Auth::id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

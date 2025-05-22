@@ -119,5 +119,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('comments', [CommentController::class, 'store']);
     Route::put('comments/{comment}', [CommentController::class, 'update']);
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
+    Route::get('commentss', [CommentController::class, 'getAllComments']);
 });
 Route::get('/categories', [CategoryController::class, 'index']);

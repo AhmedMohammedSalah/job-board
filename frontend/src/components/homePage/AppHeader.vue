@@ -2,8 +2,8 @@
   <header class="header">
     <nav class="nav-container">
       <div class="nav-links">
-        <router-link 
-          to="/" 
+        <router-link
+          to="/"
           class="nav-link"
           active-class="nav-link-active"
           exact
@@ -11,53 +11,45 @@
           <HomeIcon class="nav-icon" />
           <span>Home</span>
         </router-link>
-        
-        <router-link 
-          to="/find-job" 
+
+        <router-link
+          to="/find-job"
           class="nav-link"
           active-class="nav-link-active"
         >
           <BriefcaseIcon class="nav-icon" />
           <span>Find Job</span>
         </router-link>
-        
-        <router-link 
-          to="/employers" 
+
+        <router-link
+          to="/EmployersDashboard"
           class="nav-link"
           active-class="nav-link-active"
         >
           <BuildingOfficeIcon class="nav-icon" />
           <span>Employers</span>
         </router-link>
-        
-        <router-link 
-          to="/candidate" 
+
+        <router-link
+          to="/candidate"
           class="nav-link"
           active-class="nav-link-active"
         >
           <UserGroupIcon class="nav-icon" />
           <span>Candidates</span>
         </router-link>
-        
-        <router-link 
-          to="/pricing" 
-          class="nav-link"
-          active-class="nav-link-active"
-        >
+
+        <router-link to="/" class="nav-link" active-class="nav-link-active">
           <CurrencyDollarIcon class="nav-icon" />
           <span>Pricing</span>
         </router-link>
-        
-        <router-link 
-          to="/support" 
-          class="nav-link"
-          active-class="nav-link-active"
-        >
+
+        <router-link to="/" class="nav-link" active-class="nav-link-active">
           <LifebuoyIcon class="nav-icon" />
           <span>Support</span>
         </router-link>
       </div>
-      
+
       <div class="nav-contact">
         <div class="contact-item">
           <PhoneIcon class="contact-icon" />
@@ -74,7 +66,7 @@
 </template>
 
 <script setup>
-import { 
+import {
   HomeIcon,
   BriefcaseIcon,
   BuildingOfficeIcon,
@@ -83,8 +75,8 @@ import {
   LifebuoyIcon,
   PhoneIcon,
   GlobeAltIcon,
-  ChevronDownIcon
-} from '@heroicons/vue/24/outline'
+  ChevronDownIcon,
+} from "@heroicons/vue/24/outline";
 </script>
 
 <style scoped>
@@ -158,7 +150,8 @@ import {
   background-color: #f3f4f6;
 }
 
-.phone, .language {
+.phone,
+.language {
   color: #4b5563;
   font-size: 0.9rem;
   font-weight: 500;

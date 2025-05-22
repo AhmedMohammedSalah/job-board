@@ -10,9 +10,9 @@
           <i class="fas fa-clock"></i>
           <span>Pending Jobs</span>
         </router-link>
-        <router-link to="/job2" class="nav-item">
+        <router-link to="/adminComments" class="nav-item">
           <i class="fas fa-clipboard-list"></i>
-          <span>Active Jobs</span>
+          <span>Comment Managments</span>
         </router-link>
         <a href="#" class="nav-item logout" @click.prevent="logout">
           <i class="fas fa-sign-out-alt"></i>
@@ -130,6 +130,8 @@
 </template>
 
 <script>
+  // axios 
+  import axios from "axios";
 export default {
   name: "PendingJobsView",
   data() {
@@ -137,6 +139,7 @@ export default {
       pendingJobs: [],
       loading: false,
       error: null,
+
     };
   },
   created() {
@@ -177,65 +180,86 @@ export default {
         day: "numeric",
       });
     },
-    async approveJob(jobId) {
-      try {
-        const token = localStorage.getItem("auth_token");
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/jobs/${jobId}/approve`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-            this.$router.push({ name: "pending-jobs" });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to approve job");
-        }
-
-        this.$toast.success( "Job approved successfully" );
-        // refresh the route
-        this.$router.push({ name: "pending-jobs" });
-
-        // this.fetchPendingJobs();
-      } catch (err) {
-        this.$toast.error("Failed to approve job");
-        console.error("Error approving job:");
+async approveJob(jobId) {
+  try {
+    const token = localStorage.getItem("auth_token");
+    const response = await fetch(
+      `http://127.0.0.1:8000/api/jobs/${jobId}/approve`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
-    },
-    async rejectJob(jobId) {
-      try {
-        const token = localStorage.getItem("auth_token");
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/jobs/${jobId}/reject`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+    );
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to reject job");
-        }
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to approve job");
+    }
 
-        this.$toast.success("Job rejected successfully");
-        this.fetchPendingJobs();
-      } catch (err) {
-        this.$toast.error("Failed to reject job");
-        console.error("Error rejecting job:");
+    this.$toast.success("Job approved successfully");
+    // Remove router push and refresh data directly
+    this.fetchPendingJobs();
+  } catch (err) {
+    this.$toast.error("Failed to approve job");
+    console.error("Error approving job:", err);
+  }
+},
+
+async rejectJob(jobId) {
+  try {
+    const token = localStorage.getItem("auth_token");
+    const response = await fetch(
+      `http://127.0.0.1:8000/api/jobs/${jobId}/reject`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
-    },
-    logout() {
-      console.log("Logging out...");
-    },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to reject job");
+    }
+
+    this.$toast.success("Job rejected successfully");
+    this.fetchPendingJobs();
+  } catch (err) {
+    this.$toast.error("Failed to reject job");
+    console.error("Error rejecting job:", err);
+  }
+},
+   async logout () {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+      this.$router.push("/login");
+      return;
+    }
+
+    try {
+      await axios.get("http://localhost:8000/sanctum/csrf-cookie");
+      await axios.post(
+        "http://localhost:8000/api/logout",
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+      this.$router.push("/login");
+    }
+  },
   },
 };
 </script>

@@ -22,6 +22,7 @@ import Myjobs from "../components/employer/MyJobs.vue";
 import PostJob from "../components/employer/PostJob.vue";
 import NotFound from "../pages/Common/NotFound.vue";
 import FavoriteJobs from "../views/candidate/FavoriteJobs.vue";
+import AdminComments from "../views/AdminComments.vue";
 
 const routes = [
   {
@@ -106,6 +107,12 @@ const routes = [
     path: "/inventory",
     name: "inventory",
     component: inventory,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/adminComments",
+    name: "adminComments",
+    component: AdminComments,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   // Employer routes
