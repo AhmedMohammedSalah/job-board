@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -94,61 +96,46 @@ class JobPostController extends Controller
 
     public function store(Request $request)
     {
-        // $user = Auth::user();
-        // if ($user->role!='employer') {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'Only employers can post jobs'
-        //     ], 403);
-        // }
-$validator = Validator::make($request->all(), [
-    'title' => 'required|string|max:255',
-    "slug" => 'ancient-history-research',
-    'description' => 'required|string',
-    'responsibilities' => 'nullable|string',
-    'requirements' => 'nullable|string', // Consistent with your Postman body
-    'benefits' => 'nullable|string',
-    'work_type' => 'required|in:remote,onsite,hybrid',
-    'location' => 'required|string|max:255',
-    'min_salary' => 'nullable|numeric',
-    'max_salary' => 'nullable|numeric',
-    'type' => 'required|in:full-time,part-time,contract,freelance',
-    'closing_date' => 'nullable|date',
-    'is_remote' => 'boolean',
-    'experience_level' => 'nullable|in:entry,mid,senior',
-    'category_id' => 'required',
-    'deadline' => 'nullable|date',
-]);
-
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         $user = Auth::user();
+        if ($user->role!="employer") {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Not an employer account.'
+            ], 403);
+        }
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'responsibilities' => 'required|string',
+            'requirements' => 'required|string',
+            'benefits' => 'nullable|string',
+            'work_type' => 'required|in:remote,onsite,hybrid',
+            'location' => 'required|string',
+            'min_salary' => 'nullable|numeric',
+            'max_salary' => 'nullable|numeric',
+            'deadline' => 'required|date',
+            'status' => 'nullable|in:draft,pending,published,expired',
+        ]);
 
-        // if (!$user->employer) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'Only employers can post jobs'
-        //     ], 403);
-        // }
+        $job = Job::create([
+            'employer_id' => Auth::id(), // assuming employer is the logged in user
+            'category_id' => $validated['category_id'],
+            'title' => $validated['title'],
+            'slug' => Str::slug($validated['title']) . '-' . Str::random(5),
+            'description' => $validated['description'],
+            'responsibilities' => $validated['responsibilities'],
+            'requirements' => $validated['requirements'],
+            'benefits' => $validated['benefits'] ?? null,
+            'work_type' => $validated['work_type'],
+            'location' => $validated['location'],
+            'min_salary' => $validated['min_salary'] ?? null,
+            'max_salary' => $validated['max_salary'] ?? null,
+            'deadline' => $validated['deadline'],
+            'status' => $validated['status'] ?? 'draft',
+        ]);
 
-        // Calculate expiration date
-        $expiresAt = $request->closing_date
-            ? Carbon::parse($request->closing_date)
-            : Carbon::now()->addDays(30);
-
-        $job = new Job($validator->validated());
-        $job->employer_id = '1';
-        $job->status = 'published';
-        $job->save();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $job,
-            'message' => 'Job posted successfully'
-        ], 201);
+        return response()->json(['message' => 'Job created successfully', 'job' => $job], 201);
     }
 
     /**
