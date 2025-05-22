@@ -1,4 +1,5 @@
 <template>
+  <AppHeader />
   <div class="dashboard-container">
     <SidebarComponent
       :initialActive="0"
@@ -50,7 +51,7 @@
           <div class="jobs-container">
             <div class="jobs-header">
               <h2>Recently Posted Jobs</h2>
-              <router-link to="/employer/jobs" class="view-all">
+              <router-link to="/myjobs" class="view-all">
                 View all
                 <i class="bi bi-chevron-right"></i>
               </router-link>
@@ -299,6 +300,7 @@
       </div>
     </div>
   </div>
+  <AppFooter />
 </template>
 
 <script setup>

@@ -392,8 +392,17 @@ const handleRegister = async () => {
 
     // Handle success
     if (response.data.success) {
-      localStorage.setItem("auth_token", response.data.token);
-      router.push("/home");
+      localStorage.setItem( "auth_token", response.data.token );
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+setTimeout(() => {
+        if (response.data.user.role === "candidate") {
+          router.push("/candidateHomePage");
+        } else if (response.data.user.role === "employer") {
+          router.push("/EmployersDashboard");
+        } else {
+          router.push("/inventory");
+        }
+      }, 1500);
     }
   } catch (err) {
     console.log("Error details:", err);
