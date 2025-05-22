@@ -105,8 +105,8 @@ const routes = [
   // Admin routes
   {
     path: "/inventory",
-    name: "inventory",
-    component: inventory,
+    name: "PendingJobsView",
+    component: PendingJobsView,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
@@ -120,19 +120,19 @@ const routes = [
     path: "/EmployersDashboard",
     name: "EmployersDashboard",
     component: EmployersDashboard,
-    // meta: { requiresAuth: true, role: "employer" },
+    meta: { requiresAuth: true, role: "employer" },
   },
   {
     path: "/MyJobs",
     name: "MyJobs",
     component: Myjobs,
-    // meta: { requiresAuth: true, role: "employer" },
+    meta: { requiresAuth: true, role: "employer" },
   },
   {
     path: "/PostJob",
     name: "PostJob",
     component: PostJob,
-    // meta: { requiresAuth: true, role: "employer" },
+    meta: { requiresAuth: true, role: "employer" },
   },
   // Public job routes
   {

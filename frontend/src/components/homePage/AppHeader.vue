@@ -13,7 +13,7 @@
         </router-link>
 
         <router-link
-          to="/find-job"
+          to="/inventory"
           class="nav-link"
           active-class="nav-link-active"
         >
