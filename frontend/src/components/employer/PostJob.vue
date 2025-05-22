@@ -31,7 +31,6 @@
               <select
                 id="category_id"
                 v-model="form.category_id"
-                required
                 :disabled="categories.length === 0"
               >
                 <option value="">Select a category</option>
@@ -55,7 +54,6 @@
                 v-model="form.title"
                 type="text"
                 maxlength="255"
-                required
                 placeholder="e.g., Senior Software Engineer"
               />
               <span v-if="errors.title" class="error-text">{{
@@ -68,7 +66,6 @@
               <textarea
                 id="description"
                 v-model="form.description"
-                required
                 placeholder="Describe the job role"
               ></textarea>
               <span v-if="errors.description" class="error-text">{{
@@ -81,7 +78,6 @@
               <textarea
                 id="responsibilities"
                 v-model="form.responsibilities"
-                required
                 placeholder="List key responsibilities"
               ></textarea>
               <span v-if="errors.responsibilities" class="error-text">{{
@@ -94,7 +90,6 @@
               <textarea
                 id="requirements"
                 v-model="form.requirements"
-                required
                 placeholder="List required skills and qualifications"
               ></textarea>
               <span v-if="errors.requirements" class="error-text">{{
@@ -116,7 +111,7 @@
 
             <div class="form-group">
               <label for="work_type">Work Type *</label>
-              <select id="work_type" v-model="form.work_type" required>
+              <select id="work_type" v-model="form.work_type">
                 <option value="">Select work type</option>
                 <option value="remote">Remote</option>
                 <option value="onsite">Onsite</option>
@@ -133,7 +128,6 @@
                 id="location"
                 v-model="form.location"
                 type="text"
-                required
                 placeholder="e.g., New York, NY"
               />
               <span v-if="errors.location" class="error-text">{{
@@ -171,18 +165,13 @@
 
             <div class="form-group">
               <label for="deadline">Application Deadline *</label>
-              <input
-                id="deadline"
-                v-model="form.deadline"
-                type="date"
-                required
-              />
+              <input id="deadline" v-model="form.deadline" type="date" />
               <span v-if="errors.deadline" class="error-text">{{
                 errors.deadline
               }}</span>
             </div>
 
-            <div class="form-group">
+            <!-- <div class="form-group">
               <label for="status">Status</label>
               <select id="status" v-model="form.status">
                 <option value="">Select status</option>
@@ -194,7 +183,7 @@
               <span v-if="errors.status" class="error-text">{{
                 errors.status
               }}</span>
-            </div>
+            </div> -->
 
             <div class="form-actions">
               <button type="submit" class="btn-submit" :disabled="isSubmitting">
@@ -203,7 +192,7 @@
               <button
                 type="button"
                 class="btn-cancel"
-                @click="$router.push('/employer/jobs')"
+                @click="$router.push('/EmployersDashboard')"
               >
                 Cancel
               </button>
@@ -223,7 +212,7 @@ import axios from "axios";
 
 // Configure axios with auth
 const axiosInstance = axios.create({
-  baseURL: "/api",
+  baseURL: "http://localhost:8000/api",
 });
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
@@ -276,7 +265,7 @@ const fetchCategories = async () => {
   error.value = null;
 
   try {
-    const response = await axiosInstance.get("http://localhost:8000/api/categories");
+    const response = await axiosInstance.get("/categories");
     console.log("Categories response:", response.data);
     categories.value = response.data.data || [];
   } catch (err) {
@@ -349,12 +338,6 @@ const validateForm = () => {
       errors.value.deadline = "Invalid date format";
     }
   }
-  if (
-    form.value.status &&
-    !["draft", "pending", "published", "expired"].includes(form.value.status)
-  ) {
-    errors.value.status = "Invalid status";
-  }
 
   return Object.keys(errors.value).length === 0;
 };
@@ -382,10 +365,10 @@ const submitJob = async () => {
       min_salary: form.value.min_salary || null,
       max_salary: form.value.max_salary || null,
       deadline: form.value.deadline,
-      status: form.value.status || null,
+      status: "pending",
     });
     console.log("Submit job response:", response.data);
-    router.push("/employer/jobs");
+    router.push("/EmployersDashboard");
   } catch (err) {
     error.value = err.response?.data?.message || "Failed to post job";
     console.error("Submit job error:", err);

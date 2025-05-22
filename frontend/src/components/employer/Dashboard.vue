@@ -243,7 +243,7 @@ import axios from "axios";
 
 // Configure axios with auth
 const axiosInstance = axios.create({
-  baseURL: "/api",
+  baseURL: "http://localhost:8000/api",
 });
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
@@ -285,13 +285,13 @@ const fetchDashboardData = async () => {
   error.value = null;
 
   try {
-    const response = await axiosInstance.get(`http://localhost:8000/api/jobs`);
+    const response = await axiosInstance.get(`/jobs`);
     console.log("Jobs response:", response.data);
     jobs.value = response.data.data || [];
 
     stats.value = {
       openJobs: jobs.value.filter(
-        (job) => job.status === "published" && job.is_active
+        (job) => job.status === "published" 
       ).length,
       totalApplications: jobs.value.reduce(
         (sum, job) => sum + (job.applications_count || 0),
@@ -323,8 +323,7 @@ const showApplications = async (jobId) => {
   showApplicationsPanel.value = true;
 
   try {
-    const response = await axiosInstance.get(
-      `http://localhost:8000/api/jobs/${jobId}/applications`
+    const response = await axiosInstance.get(`/jobs/${jobId}/applications`
     );
     console.log("Applications response:", response.data);
     const job = jobs.value.find((j) => j.id === jobId);

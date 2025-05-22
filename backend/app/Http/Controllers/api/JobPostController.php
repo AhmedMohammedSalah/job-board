@@ -118,7 +118,7 @@ class JobPostController extends Controller
         ]);
 
         $job = Job::create([
-            'employer_id' => Auth::id(), 
+            'employer_id' => Auth::id(),
             'category_id' => $validated['category_id'],
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']) . '-' . Str::random(5),
