@@ -21,7 +21,7 @@
 
         <div v-if="!isLoading && !error">
           <div class="page-header">
-            <h1>Hello, {{ user?.name || "Employer" }}</h1>
+            <h1>Hello, Employer</h1>
             <p>Here is your daily activities and applications</p>
           </div>
 
@@ -85,7 +85,7 @@
                   <div class="col-job">
                     <h3>{{ job.title }}</h3>
                     <p>
-                      {{ job.employment_type || "N/A" }} •
+                      {{ job.work_type || "N/A" }} •
                       {{ formatTimeRemaining(job.created_at) }}
                     </p>
                   </div>
@@ -160,7 +160,7 @@
                     </div>
                     <div class="applicant-details">
                       <h3>{{ applicant.user?.name || "N/A" }}</h3>
-                      <p>{{ applicant.user?.title || "Job Seeker" }}</p>
+                      <p>Job Seeker</p>
                       <div class="application-meta">
                         <small
                           >Applied:
@@ -181,6 +181,24 @@
                     </div>
                   </div>
                   <div class="applicant-actions">
+                    <button
+                      class="btn-accept"
+                      :disabled="applicant.status !== 'pending'"
+                      @click="
+                        acceptApplication(applicant, selectedJobDetails.jobId)
+                      "
+                    >
+                      Accept
+                    </button>
+                    <button
+                      class="btn-reject"
+                      :disabled="applicant.status !== 'pending'"
+                      @click="
+                        rejectApplication(applicant, selectedJobDetails.jobId)
+                      "
+                    >
+                      Reject
+                    </button>
                     <button
                       class="btn-review"
                       @click="reviewApplication(applicant)"
@@ -218,13 +236,34 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useAuthStore } from "../../services/authStore";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import SidebarComponent from "./SidebarComponent.vue";
 import axios from "axios";
 
-const authStore = useAuthStore();
+// Configure axios with auth
+const axiosInstance = axios.create({
+  baseURL: "/api",
+});
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auth management
+const token = ref(localStorage.getItem("auth_token") || null);
+const setToken = (newToken) => {
+  token.value = newToken;
+  localStorage.setItem("auth_token", newToken);
+};
+const clearToken = () => {
+  token.value = null;
+  localStorage.removeItem("auth_token");
+};
+
 const router = useRouter();
 
 const isLoading = ref(false);
@@ -240,116 +279,215 @@ const showApplicationsPanel = ref(false);
 const selectedJobDetails = ref(null);
 const loadingApplications = ref(false);
 
-const user = computed(() => authStore.user);
-
 const fetchDashboardData = async () => {
-  // if (!authStore.token) {
-  //   router.push("/login");
-  //   return;
-  // }
-
+  console.log("Fetching dashboard data...");
   isLoading.value = true;
   error.value = null;
 
   try {
-    const response = await axios.get("http://localhost:8000/api/jobs", {
-      headers: { Authorization: `Bearer ${authStore.token}` },
-    });
-
+    const response = await axiosInstance.get("/jobs");
+    console.log("Jobs response:", response.data);
     jobs.value = response.data.data || [];
 
     stats.value = {
       openJobs: jobs.value.filter(
-        (job) => job.status === "published" || job.is_active
+        (job) => job.status === "published" && job.is_active
       ).length,
       totalApplications: jobs.value.reduce(
         (sum, job) => sum + (job.applications_count || 0),
         0
       ),
     };
+
+    console.log("Dashboard data loaded:", jobs.value);
   } catch (err) {
     error.value =
       err.response?.data?.message || "Failed to load dashboard data";
+    console.error("Fetch dashboard error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   } finally {
     isLoading.value = false;
   }
 };
 
 const showApplications = async (jobId) => {
+  console.log("Fetching applications for job:", jobId);
   loadingApplications.value = true;
   showApplicationsPanel.value = true;
 
   try {
-    const response = await axios.get(`http://localhost:8000/api/jobs/${jobId}/applications`, {
-      headers: { Authorization: `Bearer ${authStore.token}` },
-    });
-
-    const job = jobs.value.find((j) => j.id == jobId);
+    const response = await axiosInstance.get(`/jobs/${jobId}/applications`);
+    console.log("Applications response:", response.data);
+    const job = jobs.value.find((j) => j.id === jobId);
     selectedJobDetails.value = {
+      jobId,
       title: job?.title || "Job",
       applications: response.data.data || [],
     };
+
+    console.log("Applications loaded:", selectedJobDetails.value);
   } catch (err) {
     error.value = err.response?.data?.message || "Failed to load applications";
+    console.error("Fetch applications error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   } finally {
     loadingApplications.value = false;
   }
 };
 
 const toggleJobStatus = async (jobId) => {
+  console.log("Toggling status for job:", jobId);
   try {
-    await axios.patch(
-      `http://localhost:8000/api/jobs/${jobId}/toggle-active`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${authStore.token}` },
-      }
+    const response = await axiosInstance.patch(
+      `/jobs/${jobId}/toggle-active`,
+      {}
     );
-
-    const job = jobs.value.find((j) => j.id == jobId);
+    console.log("Toggle status response:", response.data);
+    const job = jobs.value.find((j) => j.id === jobId);
     if (job) {
-      job.is_active = !job.is_active;
-      job.status = job.is_active ? "published" : "expired";
+      job.is_active = response.data.data.is_active;
+      job.status = response.data.data.status;
     }
 
     stats.value.openJobs = jobs.value.filter(
-      (job) => job.status === "published" || job.is_active
+      (job) => job.status === "published" && job.is_active
     ).length;
     showActionMenu.value = false;
     selectedJobId.value = null;
   } catch (err) {
     error.value = err.response?.data?.message || "Failed to update job status";
+    console.error("Toggle job status error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
+  }
+};
+
+const acceptApplication = async (applicant, jobId) => {
+  console.log("Accepting application:", applicant.id, "for job:", jobId);
+  try {
+    const response = await axiosInstance.post(
+      `/jobs/${jobId}/applications/${applicant.id}/accept`
+    );
+    console.log("Accept application response:", response.data);
+    applicant.status = response.data.data.status || "accepted";
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to accept application";
+    console.error("Accept application error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
+  }
+};
+
+const rejectApplication = async (applicant, jobId) => {
+  console.log("Rejecting application:", applicant.id, "for job:", jobId);
+  try {
+    const rejectionReason = prompt("Enter rejection reason (optional):") || "";
+    const response = await axiosInstance.post(
+      `/jobs/${jobId}/applications/${applicant.id}/reject`,
+      {
+        rejection_reason: rejectionReason,
+      }
+    );
+    console.log("Reject application response:", response.data);
+    applicant.status = response.data.data.status || "rejected";
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to reject application";
+    console.error("Reject application error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   }
 };
 
 const reviewApplication = (applicant) => {
-  router.push(`/employer/applications/${applicant.id}`);
+  console.log("Reviewing application:", applicant.id);
+  router.push(`/employer/applications/${applicant.id}`).catch((err) => {
+    console.error("Navigation error in reviewApplication:", err);
+    error.value = "Failed to navigate to application details";
+  });
 };
 
 const contactApplicant = (applicant) => {
-  window.location.href = `mailto:${applicant.user.email}`;
+  console.log("Contacting applicant:", applicant.user?.email);
+  window.location.href = `mailto:${applicant.user?.email || ""}`;
 };
 
 const closeApplications = () => {
+  console.log("Closing applications panel");
   showApplicationsPanel.value = false;
   selectedJobDetails.value = null;
 };
 
 const handleNavigation = (index) => {
+  console.log("Handling navigation with index:", index);
   const routes = [
     "/employer/dashboard",
     "/employer/jobs",
     "/employer/post-job",
   ];
-  router.push(routes[index]);
+
+  if (index < 0 || index >= routes.length) {
+    console.error("Invalid navigation index:", index);
+    error.value = "Invalid navigation option selected";
+    return;
+  }
+
+  const targetRoute = routes[index];
+  console.log("Navigating to:", targetRoute);
+
+  try {
+    router.push(targetRoute).catch((err) => {
+      console.error("Router push error:", err);
+      error.value = `Failed to navigate to ${targetRoute}`;
+    });
+  } catch (err) {
+    console.error("Navigation error:", err);
+    error.value = "Navigation failed";
+  }
 };
 
-const handleLogout = async () => {
-  await authStore.logout();
-  router.push("/login");
+const handleLogout = () => {
+  console.log("Logging out");
+  clearToken();
+  router.push("/login").catch((err) => {
+    console.error("Logout navigation error:", err);
+    error.value = "Failed to navigate to login";
+  });
 };
 
 const toggleJobMenu = (jobId) => {
+  console.log("Toggling job menu for:", jobId);
   if (selectedJobId.value === jobId) {
     showActionMenu.value = !showActionMenu.value;
   } else {
@@ -369,36 +507,33 @@ const formatDate = (date) => {
 const formatTimeRemaining = (createdAt) => {
   const created = new Date(createdAt);
   const now = new Date();
-  const diffDays = Math.ceil((now - created) / (1000 * 60 * 60 * 24));
-  return `${diffDays} days ago`;
+  const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 };
 
 const getStatusClass = (status) => {
   switch (status) {
     case "published":
-    case "active":
       return "status-active";
     case "draft":
       return "status-draft";
     case "expired":
-    case "rejected":
       return "status-expired";
-    case "pending":
-      return "status-pending";
     default:
       return "status-pending";
   }
 };
 
-onMounted(async () => {
-  if (!authStore.user) {
-    try {
-      await authStore.fetchUser();
-    } catch (err) {
-      router.push("/login");
-    }
+onMounted(() => {
+  console.log("Dashboard mounted");
+  console.log("Router available:", !!router);
+  console.log("Auth token:", token.value);
+  if (!token.value) {
+    console.warn("No auth token, redirecting to login");
+    router.push("/login");
+  } else {
+    fetchDashboardData();
   }
-  fetchDashboardData();
 });
 </script>
 
@@ -826,6 +961,35 @@ onMounted(async () => {
 .applicant-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-accept {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-accept:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.btn-reject {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background-color: #c82333;
 }
 
 .btn-review {
@@ -836,7 +1000,10 @@ onMounted(async () => {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   cursor: pointer;
-  flex: 1;
+}
+
+.btn-review:hover {
+  background-color: #1a68d1;
 }
 
 .btn-contact {
@@ -847,7 +1014,16 @@ onMounted(async () => {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   cursor: pointer;
-  flex: 1;
+}
+
+.btn-contact:hover {
+  background-color: #f8f9fa;
+}
+
+.btn-accept:disabled,
+.btn-reject:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
 }
 
 .no-applicants {
