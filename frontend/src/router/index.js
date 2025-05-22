@@ -119,7 +119,7 @@ const routes = [
     path: "/MyJobs",
     name: "MyJobs",
     component: Myjobs,
-    meta: { requiresAuth: true, role: "employer" },
+    // meta: { requiresAuth: true, role: "employer" },
   },
   {
     path: "/PostJob",

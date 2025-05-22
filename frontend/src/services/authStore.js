@@ -4,7 +4,7 @@ import axios from "axios";
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
-    token: localStorage.getItem("token") || null,
+    token: localStorage.getItem("auth_token") || null,
   }),
   actions: {
     async login(credentials) {
@@ -15,7 +15,7 @@ export const useAuthStore = defineStore("auth", {
         );
         this.token = response.data.token;
         this.user = response.data.user;
-        localStorage.setItem("token", this.token);
+        localStorage.setItem("auth_token", this.token);
         axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
         return response.data;
       } catch (error) {
@@ -24,12 +24,7 @@ export const useAuthStore = defineStore("auth", {
     },
     async fetchUser() {
       try {
-        const response = await axios.get(
-          "http://localhost:8000/api/auth/get_current_user",
-          {
-            headers: { Authorization: `Bearer ${this.token}` },
-          }
-        );
+        const response = localStorage.getItem("user");
         this.user = response.data;
         return response.data;
       } catch (error) {

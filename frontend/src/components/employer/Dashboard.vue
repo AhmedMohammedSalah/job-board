@@ -252,7 +252,7 @@ const fetchDashboardData = async () => {
   error.value = null;
 
   try {
-    const response = await axios.get("/api/jobs", {
+    const response = await axios.get("http://localhost:8000/api/jobs", {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
 
@@ -280,7 +280,7 @@ const showApplications = async (jobId) => {
   showApplicationsPanel.value = true;
 
   try {
-    const response = await axios.get(`/api/jobs/${jobId}/applications`, {
+    const response = await axios.get(`http://localhost:8000/api/jobs/${jobId}/applications`, {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
 
@@ -299,7 +299,7 @@ const showApplications = async (jobId) => {
 const toggleJobStatus = async (jobId) => {
   try {
     await axios.patch(
-      `/api/jobs/${jobId}/toggle-active`,
+      `http://localhost:8000/api/jobs/${jobId}/toggle-active`,
       {},
       {
         headers: { Authorization: `Bearer ${authStore.token}` },

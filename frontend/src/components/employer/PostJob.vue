@@ -38,7 +38,7 @@
                 <option
                   v-for="category in categories"
                   :key="category.id"
-                  :value="category.id"
+                  :value="category.name"
                 >
                   {{ category.name }}
                 </option>
@@ -346,9 +346,13 @@ const submitJob = async () => {
       status: jobData.status,
     };
 
-    const response = await axios.post("/api/addjobs", payload, {
-      headers: { Authorization: `Bearer ${authStore.token}` },
-    });
+    const response = await axios.post(
+      "http://localhost:8000/api/addjobs",
+      payload,
+      {
+        headers: { Authorization: `Bearer ${authStore.token}` },
+      }
+    );
 
     if (response.status === 201) {
       alert("Job posted successfully!");
@@ -369,12 +373,12 @@ const fetchCategories = async () => {
     error.value = null;
     console.log("Fetching categories with token:", authStore.token);
 
-    const response = await axios.get("/api/categories", {
+    const response = await axios.get("http://localhost:8000/api/categories", {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
 
     console.log("Categories response:", response.data);
-    categories.value = response.data.data || [];
+    categories.value = response.data || [];
     if (categories.value.length === 0) {
       error.value = "No categories found. Please contact support.";
     }

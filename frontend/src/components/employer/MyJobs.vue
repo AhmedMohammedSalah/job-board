@@ -237,7 +237,7 @@ const fetchJobs = async () => {
   error.value = null;
 
   try {
-    const response = await axios.get(`/api/jobs?page=${currentPage.value}`, {
+    const response = await axios.get(`http://localhost:8000/api/jobs?page=${currentPage.value}`, {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
 
@@ -268,7 +268,7 @@ const viewDetails = (jobId) => {
 const toggleJobStatus = async (jobId) => {
   try {
     await axios.patch(
-      `/api/jobs/${jobId}/toggle-active`,
+      `http://localhost:8000/api/jobs/${jobId}/toggle-active`,
       {},
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
