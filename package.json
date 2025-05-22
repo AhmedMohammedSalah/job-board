@@ -1,15 +1,12 @@
 {
   "dependencies": {
-<<<<<<< HEAD
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
-    "bootstrap-icons": "^1.13.1"
-=======
+    "bootstrap-icons": "^1.13.1",
     "axios": "^1.9.0",
     "pinia": "^3.0.2"
->>>>>>> origin/main
   }
 }

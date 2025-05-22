@@ -16,6 +16,7 @@ use App\Http\Controllers\api\CandidateController;
 use App\Http\Controllers\api\SkillController;
 // use CandidateSkillController
 use App\Http\Controllers\api\CandidateSkillController;
+use App\Http\Controllers\api\CategoryController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -119,3 +120,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('comments/{comment}', [CommentController::class, 'update']);
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
 });
+Route::get('/categories', [CategoryController::class, 'index']);

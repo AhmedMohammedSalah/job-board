@@ -1,6 +1,5 @@
 <?php
 namespace App\Http\Controllers\api;
-
 namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use App\Models\Job;
@@ -119,7 +118,7 @@ class JobPostController extends Controller
         ]);
 
         $job = Job::create([
-            'employer_id' => Auth::id(), // assuming employer is the logged in user
+            'employer_id' => Auth::id(), 
             'category_id' => $validated['category_id'],
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']) . '-' . Str::random(5),
