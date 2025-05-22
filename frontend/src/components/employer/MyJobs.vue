@@ -1,331 +1,652 @@
 <template>
-  <div class="d-flex">
-    <SidebarComponent />
-    <div class="job-list-container">
-      <div v-if="isLoading" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <p>Loading jobs...</p>
-      </div>
-      <div v-if="error" class="error-alert">
-        <i class="bi bi-exclamation-circle"></i>
-        <p>{{ error }}</p>
-        <button @click="fetchJobs">Retry</button>
-      </div>
-      <div v-if="!isLoading && !error" class="job-header">
-        <h4>
-          My Jobs <span class="job-count">({{ jobs.length }})</span>
-        </h4>
-        <div class="filter-controls">
-          <div class="job-status-filter">
-            <span>Job status</span>
-            <div class="btn-group">
-              <button
-                :class="[
-                  'btn',
-                  'btn-outline-secondary',
-                  { active: currentFilter === 'all' },
-                ]"
-                @click="filterJobs('all')"
-              >
-                All Jobs
-              </button>
-              <button
-                :class="[
-                  'btn',
-                  'btn-outline-secondary',
-                  { active: currentFilter === 'published' },
-                ]"
-                @click="filterJobs('published')"
-              >
-                Published
-              </button>
-              <button
-                :class="[
-                  'btn',
-                  'btn-outline-secondary',
-                  { active: currentFilter === 'expired' },
-                ]"
-                @click="filterJobs('expired')"
-              >
-                Expired
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="myjobs-container">
+    <SidebarComponent
+      :initialActive="1"
+      @navigate="handleNavigation"
+      @logout="handleLogout"
+    />
 
-      <div v-if="!isLoading && !error" class="job-list-table">
-        <table class="table">
-          <thead>
-            <tr>
-              <th class="jobs-header">JOBS</th>
-              <th class="status-header">STATUS</th>
-              <th class="applications-header">APPLICATIONS</th>
-              <th class="actions-header">ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="job in paginatedJobs"
-              :key="job.id"
-              :class="{ 'highlighted-row': job.id === selectedJobId }"
-            >
-              <td class="job-info">
-                <div class="job-title">{{ job.title }}</div>
-                <div class="job-details">
-                  <span>{{ job.employment_type || "N/A" }}</span>
-                  <span v-if="job.closing_date" class="bullet-separator"
-                    >•</span
+    <div class="main-content">
+      <div class="content-wrapper">
+        <div v-if="isLoading" class="loading-overlay">
+          <div class="loading-spinner"></div>
+          <p>Loading jobs...</p>
+        </div>
+
+        <div v-if="error" class="error-alert">
+          <i class="bi bi-exclamation-circle"></i>
+          <p>{{ error }}</p>
+          <button @click="fetchJobsData">Retry</button>
+        </div>
+
+        <div v-if="!isLoading && !error">
+          <div class="page-header">
+            <h1>My Jobs</h1>
+            <p>Manage your posted jobs and applications</p>
+          </div>
+
+          <div class="jobs-container">
+            <div class="jobs-header">
+              <h2>Your Jobs</h2>
+              <router-link to="/employer/post-job" class="post-job">
+                Post New Job
+                <i class="bi bi-plus-circle"></i>
+              </router-link>
+            </div>
+
+            <div class="jobs-table">
+              <div class="table-header">
+                <div class="col-job">JOBS</div>
+                <div class="col-status">STATUS</div>
+                <div class="col-applications">APPLICATIONS</div>
+                <div class="col-actions">ACTIONS</div>
+              </div>
+
+              <div v-if="jobs.length === 0" class="no-jobs">
+                <p>
+                  No jobs posted yet.
+                  <router-link to="/employer/post-job"
+                    >Create your first job</router-link
                   >
-                  <span v-if="job.closing_date">{{
-                    formatDaysRemaining(job.closing_date)
-                  }}</span>
-                  <span v-if="job.created_at" class="bullet-separator">•</span>
-                  <span v-if="job.created_at">{{
-                    formatDate(job.created_at)
-                  }}</span>
-                </div>
-              </td>
-              <td class="status-cell">
-                <span :class="['status-badge', getStatusClass(job.status)]">
-                  <i
-                    :class="[
-                      'bi',
-                      job.is_active
-                        ? 'bi-check-circle-fill'
-                        : 'bi-x-circle-fill',
-                    ]"
-                  ></i>
-                  {{ job.status.charAt(0).toUpperCase() + job.status.slice(1) }}
-                </span>
-              </td>
-              <td class="applications-cell">
-                <span class="applications-count">
-                  <i class="bi bi-people-fill"></i>
-                  {{ job.applications_count || 0 }} Applications
-                </span>
-              </td>
-              <td class="actions-cell">
-                <button
-                  class="btn btn-primary btn-sm view-applications"
-                  @click="viewApplications(job.id)"
+                </p>
+              </div>
+
+              <div class="table-body">
+                <div
+                  v-for="job in jobs"
+                  :key="job.id"
+                  :class="[
+                    'job-row',
+                    { 'selected-job': job.id === selectedJobId },
+                  ]"
                 >
-                  View Applications
-                </button>
-                <div class="dropdown">
-                  <button
-                    class="btn btn-light btn-sm options-btn"
-                    @click="toggleDropdown(job.id)"
-                  >
-                    <i class="bi bi-three-dots"></i>
-                  </button>
-                  <div
-                    v-if="job.id === activeDropdown"
-                    class="dropdown-menu"
-                    @click.stop
-                  >
-                    <a
-                      href="#"
-                      class="dropdown-item"
-                      @click.prevent="viewDetails(job.id)"
+                  <div class="col-job">
+                    <h3>{{ job.title }}</h3>
+                    <p>
+                      {{ job.work_type || "N/A" }} •
+                      {{ formatTimeRemaining(job.created_at) }}
+                    </p>
+                  </div>
+                  <div class="col-status">
+                    <span :class="['status-badge', getStatusClass(job.status)]">
+                      <span
+                        :class="['status-dot', getStatusClass(job.status)]"
+                      ></span>
+                      {{
+                        job.status.charAt(0).toUpperCase() + job.status.slice(1)
+                      }}
+                    </span>
+                  </div>
+                  <div class="col-applications">
+                    <i class="bi bi-people"></i>
+                    <span>{{ job.applications_count || 0 }} Applications</span>
+                  </div>
+                  <div class="col-actions">
+                    <button class="btn-view" @click="showApplications(job.id)">
+                      View Applications
+                    </button>
+                    <button class="btn-menu" @click="toggleJobMenu(job.id)">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+
+                    <div
+                      v-if="job.id === selectedJobId && showActionMenu"
+                      class="action-menu"
                     >
-                      <i class="bi bi-eye"></i> View Detail
-                    </a>
-                    <a
-                      href="#"
-                      class="dropdown-item"
-                      @click.prevent="toggleJobStatus(job.id)"
-                    >
-                      <i class="bi bi-toggle-on"></i>
-                      {{ job.is_active ? "Mark as Expired" : "Reactivate" }}
-                    </a>
+                      <ul>
+                        <li
+                          class="menu-item"
+                          @click="$router.push(`/employer/jobs/${job.id}`)"
+                        >
+                          <i class="bi bi-eye"></i>
+                          View Detail
+                        </li>
+                        <li class="menu-item" @click="toggleJobStatus(job.id)">
+                          <i class="bi bi-check-circle"></i>
+                          {{ job.is_active ? "Mark as Expired" : "Reactivate" }}
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </td>
-            </tr>
-            <tr v-if="paginatedJobs.length === 0">
-              <td colspan="4" class="no-jobs">
-                No jobs found.
-                <router-link to="/employer/post-job"
-                  >Create a new job</router-link
-                >
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
+          </div>
 
-      <div v-if="!isLoading && !error && jobs.length > 0" class="pagination">
-        <ul class="pagination-list">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a
-              class="page-link"
-              href="#"
-              aria-label="Previous"
-              @click.prevent="prevPage"
-            >
-              <span aria-hidden="true">&laquo;</span>
-            </a>
-          </li>
-          <li
-            v-for="page in totalPages"
-            :key="page"
-            :class="['page-item', { active: currentPage === page }]"
-          >
-            <a class="page-link" href="#" @click.prevent="goToPage(page)">
-              {{ page < 10 ? "0" + page : page }}
-            </a>
-          </li>
-          <li
-            class="page-item"
-            :class="{ disabled: currentPage === totalPages }"
-          >
-            <a
-              class="page-link"
-              href="#"
-              aria-label="Next"
-              @click.prevent="nextPage"
-            >
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-        </ul>
+          <div v-if="showApplicationsPanel" class="applications-panel">
+            <div class="applications-header">
+              <h2>Applications for {{ selectedJobDetails?.title }}</h2>
+              <button class="close-btn" @click="closeApplications">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            <div class="applications-content">
+              <div v-if="loadingApplications" class="loading-applications">
+                <div class="loading-spinner"></div>
+                <p>Loading applications...</p>
+              </div>
+
+              <div v-else>
+                <div
+                  v-for="applicant in selectedJobDetails?.applications || []"
+                  :key="applicant.id"
+                  class="applicant-card"
+                >
+                  <div class="applicant-info">
+                    <div class="applicant-avatar">
+                      <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="applicant-details">
+                      <h3>
+                        {{
+                          applicant.candidate?.name ||
+                          applicant.user?.name ||
+                          "N/A"
+                        }}
+                      </h3>
+                      <p>Job Seeker</p>
+                      <div class="application-meta">
+                        <small
+                          >Applied:
+                          {{ formatDate(applicant.created_at) || "N/A" }}</small
+                        >
+                        <span
+                          :class="[
+                            'status-badge',
+                            `status-${applicant.status}`,
+                          ]"
+                        >
+                          {{
+                            applicant.status.charAt(0).toUpperCase() +
+                            applicant.status.slice(1)
+                          }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="applicant-actions">
+                    <button
+                      class="btn-review"
+                      @click="viewApplication(applicant)"
+                    >
+                      View Details
+                    </button>
+                    <button
+                      class="btn-accept"
+                      :disabled="applicant.status !== 'pending'"
+                      @click="
+                        acceptApplication(applicant, selectedJobDetails.jobId)
+                      "
+                    >
+                      Accept
+                    </button>
+                    <button
+                      class="btn-reject"
+                      :disabled="applicant.status !== 'pending'"
+                      @click="
+                        rejectApplication(applicant, selectedJobDetails.jobId)
+                      "
+                    >
+                      Reject
+                    </button>
+                    <button
+                      class="btn-contact"
+                      @click="contactApplicant(applicant)"
+                    >
+                      Contact
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  v-if="selectedJobDetails?.applications?.length === 0"
+                  class="no-applicants"
+                >
+                  No applications available to display
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Application Details Modal -->
+          <div v-if="showApplicationModal" class="modal-overlay">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h2>Application Details</h2>
+                <button class="close-btn" @click="closeApplicationModal">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div v-if="loadingApplicationDetails" class="loading">
+                  <div class="loading-spinner"></div>
+                  <p>Loading application details...</p>
+                </div>
+                <div v-else-if="applicationDetailsError" class="error-alert">
+                  <i class="bi bi-exclamation-circle"></i>
+                  <p>{{ applicationDetailsError }}</p>
+                  <button
+                    @click="fetchApplicationDetails(selectedApplication.id)"
+                  >
+                    Retry
+                  </button>
+                </div>
+                <div v-else class="application-details">
+                  <div class="detail-group">
+                    <label>Candidate Name</label>
+                    <p>{{ applicationDetails.candidate?.name || "N/A" }}</p>
+                  </div>
+                  <div class="detail-group">
+                    <label>Email</label>
+                    <p>{{ applicationDetails.candidate?.email || "N/A" }}</p>
+                  </div>
+                  <div class="detail-group">
+                    <label>Job Title</label>
+                    <p>{{ applicationDetails.job?.title || "N/A" }}</p>
+                  </div>
+                  <div class="detail-group">
+                    <label>Status</label>
+                    <span
+                      :class="[
+                        'status-badge',
+                        `status-${applicationDetails.status}`,
+                      ]"
+                    >
+                      {{
+                        applicationDetails.status.charAt(0).toUpperCase() +
+                        applicationDetails.status.slice(1)
+                      }}
+                    </span>
+                  </div>
+                  <div class="detail-group">
+                    <label>Applied Date</label>
+                    <p>
+                      {{
+                        applicationDetails.created_at
+                          ? formatDate(applicationDetails.created_at)
+                          : "N/A"
+                      }}
+                    </p>
+                  </div>
+                  <div class="detail-group">
+                    <label>Cover Letter</label>
+                    <p
+                      v-if="applicationDetails.cover_letter"
+                      class="cover-letter"
+                    >
+                      {{ applicationDetails.cover_letter }}
+                    </p>
+                    <p v-else class="no-data">No cover letter provided</p>
+                  </div>
+                  <div class="detail-group">
+                    <label>Resume</label>
+                    <p v-if="applicationDetails.resume_path">
+                      <a
+                        :href="applicationDetails.resume_path"
+                        target="_blank"
+                        class="resume-link"
+                      >
+                        View Resume
+                      </a>
+                    </p>
+                    <p v-else class="no-data">No resume provided</p>
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="!loadingApplicationDetails && !applicationDetailsError"
+                class="modal-footer"
+              >
+                <button
+                  class="btn-accept"
+                  :disabled="applicationDetails.status !== 'pending'"
+                  @click="
+                    acceptApplication(
+                      selectedApplication,
+                      applicationDetails.job_id
+                    )
+                  "
+                >
+                  Accept
+                </button>
+                <button
+                  class="btn-reject"
+                  :disabled="applicationDetails.status !== 'pending'"
+                  @click="
+                    rejectApplication(
+                      selectedApplication,
+                      applicationDetails.job_id
+                    )
+                  "
+                >
+                  Reject
+                </button>
+                <button class="btn-close" @click="closeApplicationModal">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="showApplicationsPanel"
+            class="overlay"
+            @click="closeApplications"
+          ></div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "../../services/authStore";
 import SidebarComponent from "./SidebarComponent.vue";
 import axios from "axios";
 
-const router = useRouter();
-const authStore = useAuthStore();
-
-const jobs = ref([]);
-const selectedJobId = ref(null);
-const activeDropdown = ref(null);
-const currentPage = ref(1);
-const itemsPerPage = 10;
-const totalPages = ref(1);
-const error = ref(null);
-const isLoading = ref(false);
-const currentFilter = ref("all");
-
-const paginatedJobs = computed(() => {
-  let filteredJobs = jobs.value;
-  if (currentFilter.value !== "all") {
-    filteredJobs = jobs.value.filter(
-      (job) => job.status === currentFilter.value
-    );
+// Configure axios with auth
+const axiosInstance = axios.create({
+  baseURL: "/api",
+});
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return filteredJobs.slice(start, end);
+  return config;
 });
 
-const fetchJobs = async () => {
-  if (!authStore.token) {
-    router.push("/login");
-    return;
-  }
+// Auth management
+const token = ref(localStorage.getItem("auth_token") || null);
+const setToken = (newToken) => {
+  token.value = newToken;
+  localStorage.setItem("auth_token", newToken);
+};
+const clearToken = () => {
+  token.value = null;
+  localStorage.removeItem("auth_token");
+};
 
+const router = useRouter();
+
+const isLoading = ref(false);
+const error = ref(null);
+const jobs = ref([]);
+const showActionMenu = ref(false);
+const selectedJobId = ref(null);
+const showApplicationsPanel = ref(false);
+const selectedJobDetails = ref(null);
+const loadingApplications = ref(false);
+
+// Modal state
+const showApplicationModal = ref(false);
+const selectedApplication = ref(null);
+const applicationDetails = ref(null);
+const loadingApplicationDetails = ref(false);
+const applicationDetailsError = ref(null);
+
+const fetchJobsData = async () => {
+  console.log("Fetching jobs data...");
   isLoading.value = true;
   error.value = null;
 
   try {
-    const response = await axios.get(`http://localhost:8000/api/jobs?page=${currentPage.value}`, {
-      headers: { Authorization: `Bearer ${authStore.token}` },
-    });
-
+    const response = await axiosInstance.get("/jobs");
+    console.log("Jobs response:", response.data);
     jobs.value = response.data.data || [];
-    totalPages.value = response.data.last_page || 1;
+    console.log("Jobs data loaded:", jobs.value);
   } catch (err) {
-    error.value = err.response?.data?.message || "Failed to load jobs";
+    error.value = err.response?.data?.message || "Failed to load jobs data";
+    console.error("Fetch jobs error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   } finally {
     isLoading.value = false;
   }
 };
 
-const filterJobs = (filter) => {
-  currentFilter.value = filter;
-  currentPage.value = 1;
-  fetchJobs();
-};
+const showApplications = async (jobId) => {
+  console.log("Fetching applications for job:", jobId);
+  loadingApplications.value = true;
+  showApplicationsPanel.value = true;
 
-const toggleDropdown = (jobId) => {
-  activeDropdown.value = activeDropdown.value === jobId ? null : jobId;
-};
-
-const viewDetails = (jobId) => {
-  router.push(`/employer/jobs/${jobId}`);
-  activeDropdown.value = null;
+  try {
+    const response = await axiosInstance.get(`/jobs/${jobId}/applications`);
+    console.log("Applications response:", response.data);
+    const job = jobs.value.find((j) => j.id === jobId);
+    selectedJobDetails.value = {
+      jobId,
+      title: job?.title || "Job",
+      applications: response.data.data || [],
+    };
+    console.log("Applications loaded:", selectedJobDetails.value);
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to load applications";
+    console.error("Fetch applications error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
+  } finally {
+    loadingApplications.value = false;
+  }
 };
 
 const toggleJobStatus = async (jobId) => {
+  console.log("Toggling status for job:", jobId);
   try {
-    await axios.patch(
-      `http://localhost:8000/api/jobs/${jobId}/toggle-active`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${authStore.token}` },
-      }
+    const response = await axiosInstance.patch(
+      `/jobs/${jobId}/toggle-active`,
+      {}
     );
-
+    console.log("Toggle status response:", response.data);
     const job = jobs.value.find((j) => j.id === jobId);
     if (job) {
-      job.is_active = !job.is_active;
-      job.status = job.is_active ? "published" : "expired";
+      job.is_active = response.data.data.is_active;
+      job.status = response.data.data.status;
     }
-    activeDropdown.value = null;
+    showActionMenu.value = false;
+    selectedJobId.value = null;
   } catch (err) {
     error.value = err.response?.data?.message || "Failed to update job status";
+    console.error("Toggle job status error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   }
 };
 
-const viewApplications = (jobId) => {
-  router.push(`/employer/jobs/${jobId}/applications`);
-  activeDropdown.value = null;
-};
+const acceptApplication = async (applicant, jobId) => {
+  console.log(
+    "Initiating payment for application:",
+    applicant.id,
+    "for job:",
+    jobId
+  );
+  if (!confirm("Accepting this application requires a $50 payment. Proceed?")) {
+    return;
+  }
 
-const goToPage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-    fetchJobs();
+  try {
+    const response = await axiosInstance.post(
+      `/jobs/${jobId}/applications/${applicant.id}/accept`
+    );
+    console.log("Payment initiation response:", response.data);
+    if (response.data.checkout_url) {
+      window.location.href = response.data.checkout_url;
+    } else {
+      error.value = "Payment initiation failed";
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to initiate payment";
+    console.error("Payment initiation error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   }
 };
 
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-    fetchJobs();
+const rejectApplication = async (applicant, jobId) => {
+  console.log("Rejecting application:", applicant.id, "for job:", jobId);
+  try {
+    const rejectionReason = prompt("Enter rejection reason (optional):") || "";
+    const response = await axiosInstance.post(
+      `/jobs/${jobId}/applications/${applicant.id}/reject`,
+      {
+        rejection_reason: rejectionReason,
+      }
+    );
+    console.log("Reject application response:", response.data);
+    applicant.status = response.data.data.status || "rejected";
+    if (showApplicationModal.value) {
+      closeApplicationModal();
+    }
+    // Refresh applications
+    if (selectedJobDetails.value) {
+      showApplications(selectedJobDetails.value.jobId);
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || "Failed to reject application";
+    console.error("Reject application error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
   }
 };
 
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-    fetchJobs();
+const viewApplication = (applicant) => {
+  console.log("Viewing application:", applicant.id);
+  selectedApplication.value = applicant;
+  showApplicationModal.value = true;
+  fetchApplicationDetails(applicant.id);
+};
+
+const fetchApplicationDetails = async (applicationId) => {
+  console.log("Fetching application details for ID:", applicationId);
+  loadingApplicationDetails.value = true;
+  applicationDetailsError.value = null;
+  applicationDetails.value = null;
+
+  try {
+    const response = await axiosInstance.get(`/applications/${applicationId}`);
+    console.log("Application details response:", response.data);
+    applicationDetails.value = response.data.data;
+  } catch (err) {
+    applicationDetailsError.value =
+      err.response?.data?.message || "Failed to load application details";
+    console.error("Fetch application details error:", err);
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
+    }
+    if (err.response?.status === 401) {
+      clearToken();
+      router.push("/login");
+    }
+  } finally {
+    loadingApplicationDetails.value = false;
   }
 };
 
-const closeDropdownOnClickOutside = (event) => {
-  if (activeDropdown.value !== null) {
-    activeDropdown.value = null;
+const closeApplicationModal = () => {
+  console.log("Closing application modal");
+  showApplicationModal.value = false;
+  selectedApplication.value = null;
+  applicationDetails.value = null;
+  applicationDetailsError.value = null;
+};
+
+const contactApplicant = (applicant) => {
+  console.log(
+    "Contacting applicant:",
+    applicant.candidate?.email || applicant.user?.email
+  );
+  window.location.href = `mailto:${
+    applicant.candidate?.email || applicant.user?.email || ""
+  }`;
+};
+
+const closeApplications = () => {
+  console.log("Closing applications panel");
+  showApplicationsPanel.value = false;
+  selectedJobDetails.value = null;
+};
+
+const handleNavigation = (index) => {
+  console.log("Handling navigation with index:", index);
+  const routes = [
+    "/employer/dashboard",
+    "/employer/jobs",
+    "/employer/post-job",
+  ];
+
+  if (index < 0 || index >= routes.length) {
+    console.error("Invalid navigation index:", index);
+    error.value = "Invalid navigation option selected";
+    return;
+  }
+
+  const targetRoute = routes[index];
+  console.log("Navigating to:", targetRoute);
+
+  try {
+    router.push(targetRoute).catch((err) => {
+      console.error("Router push error:", err);
+      error.value = `Failed to navigate to ${targetRoute}`;
+    });
+  } catch (err) {
+    console.error("Navigation error:", err);
+    error.value = "Navigation failed";
   }
 };
 
-const formatDaysRemaining = (closingDate) => {
-  const now = new Date();
-  const close = new Date(closingDate);
-  const diffDays = Math.ceil((close - now) / (1000 * 60 * 60 * 24));
-  return diffDays > 0 ? `${diffDays} days remaining` : "Expired";
+const handleLogout = () => {
+  console.log("Logging out");
+  clearToken();
+  router.push("/login").catch((err) => {
+    console.error("Logout navigation error:", err);
+    error.value = "Failed to navigate to login";
+  });
+};
+
+const toggleJobMenu = (jobId) => {
+  console.log("Toggling job menu for:", jobId);
+  if (selectedJobId.value === jobId) {
+    showActionMenu.value = !showActionMenu.value;
+  } else {
+    selectedJobId.value = jobId;
+    showActionMenu.value = true;
+  }
 };
 
 const formatDate = (date) => {
+  if (!date) return "N/A";
   return new Date(date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -333,273 +654,504 @@ const formatDate = (date) => {
   });
 };
 
-const getStatusClass = (status) => {
-  return status === "published" || status === "active" ? "active" : "expire";
+const formatTimeRemaining = (createdAt) => {
+  if (!createdAt) return "N/A";
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 };
 
-onMounted(async () => {
-  if (!authStore.user) {
-    try {
-      await authStore.fetchUser();
-    } catch (err) {
-      router.push("/login");
+const getStatusClass = (status) => {
+  switch (status) {
+    case "published":
+      return "status-active";
+    case "draft":
+      return "status-draft";
+    case "expired":
+      return "status-expired";
+    default:
+      return "status-pending";
+  }
+};
+
+onMounted(() => {
+  console.log("MyJobs mounted");
+  console.log("Router available:", !!router);
+  console.log("Auth token:", token.value);
+  if (!token.value) {
+    console.warn("No auth token, redirecting to login");
+    router.push("/login");
+  } else {
+    fetchJobsData();
+
+    // Handle payment redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get("payment");
+    const applicationId = urlParams.get("application_id");
+    if (paymentStatus === "success") {
+      error.value = "Payment successful! Application accepted.";
+      if (applicationId && selectedJobDetails.value) {
+        showApplications(selectedJobDetails.value.jobId);
+      }
+    } else if (paymentStatus === "cancel") {
+      error.value = "Payment cancelled. Application not accepted.";
     }
   }
-  fetchJobs();
-  document.addEventListener("click", closeDropdownOnClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", closeDropdownOnClickOutside);
 });
 </script>
 
 <style scoped>
-.job-list-container {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  max-width: 1200px;
-  margin: 20px auto;
-}
-
-.job-header {
+.myjobs-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.job-count {
-  color: #6c757d;
-  font-weight: normal;
-}
-
-.filter-controls {
-  display: flex;
-  align-items: center;
-}
-
-.job-status-filter {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.job-status-filter span {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.job-list-table {
-  margin-bottom: 20px;
-  overflow-x: auto;
-}
-
-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: 100%;
-}
-
-thead th {
+  height: 100vh;
   background-color: #f8f9fa;
+}
+
+.main-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.content-wrapper {
+  padding: 1.5rem;
+  position: relative;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.page-header p {
   color: #6c757d;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  padding: 12px 15px;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.jobs-container {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 
 .jobs-header {
-  width: 35%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
 }
 
-.status-header {
-  width: 15%;
+.jobs-header h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
 }
 
-.applications-header {
-  width: 25%;
+.post-job {
+  font-size: 0.875rem;
+  color: #2c7be5;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }
 
-.actions-header {
-  width: 25%;
+.post-job i {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
 }
 
-tbody tr {
-  border-bottom: 1px solid #e9ecef;
+.jobs-table {
+  width: 100%;
 }
 
-tbody tr.highlighted-row {
-  background-color: #f8f9fb;
-  border: 1px solid #3b82f6;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.job-info {
-  padding: 15px;
-}
-
-.job-title {
-  font-weight: 600;
-  color: #212529;
-  margin-bottom: 5px;
-}
-
-.job-details {
+.table-header {
+  display: grid;
+  grid-template-columns: 4fr 2fr 3fr 3fr;
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: #6c757d;
-  font-size: 0.85rem;
 }
 
-.bullet-separator {
-  margin: 0 5px;
+.job-row {
+  display: grid;
+  grid-template-columns: 4fr 2fr 3fr 3fr;
+  padding: 1rem;
+  border-top: 1px solid #f1f1f1;
+  align-items: center;
+  position: relative;
+  transition: all 0.2s ease;
 }
 
-.status-cell {
-  vertical-align: middle;
-  padding: 0 15px;
+.job-row.selected-job {
+  background-color: #e9f0ff;
+  border: 1px solid #c9d8f3;
+  border-radius: 0.25rem;
+  margin: 0.25rem 0.5rem;
+}
+
+.col-job h3 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: 0.25rem;
+}
+
+.col-job p {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0;
 }
 
 .status-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
 }
 
-.status-badge.active {
+.status-active {
   color: #28a745;
 }
 
-.status-badge.expire {
+.status-expired {
   color: #dc3545;
 }
 
-.applications-cell {
-  vertical-align: middle;
-  padding: 0 15px;
+.status-pending {
+  color: #ffc107;
 }
 
-.applications-count {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.status-draft {
   color: #6c757d;
-  font-size: 0.9rem;
 }
 
-.actions-cell {
-  vertical-align: middle;
-  padding: 15px;
+.status-accepted {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+}
+
+.status-dot.status-active {
+  background-color: #28a745;
+}
+
+.status-dot.status-expired {
+  background-color: #dc3545;
+}
+
+.status-dot.status-pending {
+  background-color: #ffc107;
+}
+
+.status-dot.status-draft {
+  background-color: #6c757d;
+}
+
+.col-applications {
   display: flex;
   align-items: center;
-  gap: 10px;
+  color: #6c757d;
+  font-size: 0.875rem;
 }
 
-.view-applications {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+.col-applications i {
+  margin-right: 0.5rem;
 }
 
-.options-btn {
-  padding: 0.25rem 0.5rem;
+.col-actions {
+  display: flex;
+  align-items: center;
 }
 
-.dropdown {
-  position: relative;
+.btn-view {
+  background-color: #2c7be5;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.dropdown-menu {
+.btn-view:hover {
+  background-color: #1a68d1;
+}
+
+.btn-menu {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.btn-menu:hover {
+  color: #6c757d;
+}
+
+.action-menu {
   position: absolute;
-  right: 0;
-  top: 100%;
+  right: 3rem;
+  top: 4rem;
   background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  min-width: 160px;
-  padding: 8px 0;
-  margin-top: 5px;
+  border: 1px solid #e9ecef;
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  width: 12rem;
+  z-index: 10;
 }
 
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 15px;
-  color: #212529;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.dropdown-item:hover {
-  background-color: #f8f9fa;
-  color: #3b82f6;
-}
-
-.dropdown-item i {
-  margin-right: 8px;
-  color: #6c757d;
-  font-size: 1rem;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.pagination-list {
-  display: flex;
+.action-menu ul {
   list-style: none;
   padding: 0;
   margin: 0;
-  gap: 5px;
 }
 
-.page-item.disabled .page-link {
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #495057;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background-color: #f8f9fa;
+}
+
+.menu-item i {
+  margin-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.applications-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 450px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+}
+
+.applications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.applications-header h2 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
   color: #6c757d;
-  pointer-events: none;
+  cursor: pointer;
+}
+
+.applications-content {
+  padding: 1rem;
+}
+
+.loading-applications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.applicant-card {
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.applicant-info {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.applicant-avatar {
+  width: 50px;
+  height: 50px;
   background-color: #e9ecef;
-}
-
-.page-item.active .page-link {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
-  color: white;
-}
-
-.page-link {
-  color: #6c757d;
-  border-radius: 4px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  margin-right: 1rem;
 }
 
-.page-link:hover {
-  background-color: #e9ecef;
-  color: #3b82f6;
+.applicant-avatar i {
+  font-size: 1.5rem;
+  color: #6c757d;
+}
+
+.applicant-details h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: 0.25rem;
+}
+
+.applicant-details p {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0;
+  margin-bottom: 0.5rem;
+}
+
+.application-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.application-meta small {
+  color: #6c757d;
+}
+
+.applicant-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-accept {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-accept:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.btn-reject {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.btn-review {
+  background-color: #2c7be5;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-review:hover {
+  background-color: #1a68d1;
+}
+
+.btn-contact {
+  background-color: white;
+  color: #2c7be5;
+  border: 1px solid #2c7be5;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-contact:hover {
+  background-color: #f8f9fa;
+}
+
+.btn-accept:disabled,
+.btn-reject:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.no-applicants {
+  text-align: center;
+  color: #6c757d;
+  padding: 2rem 0;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 
 .loading-overlay {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  z-index: 1000;
 }
 
 .loading-spinner {
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #3b82f6;
+  border-top: 4px solid #2c7be5;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -648,7 +1200,7 @@ tbody tr.highlighted-row {
 }
 
 .no-jobs a {
-  color: #3b82f6;
+  color: #2c7be5;
   text-decoration: none;
 }
 
@@ -656,25 +1208,119 @@ tbody tr.highlighted-row {
   text-decoration: underline;
 }
 
-@media (max-width: 992px) {
-  .job-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
-  }
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
 
-  .filter-controls {
-    width: 100%;
-  }
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 600px;
+  max-width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
 
-  .actions-cell {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
 
-  .view-applications {
-    width: 100%;
-  }
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid #e9ecef;
+  justify-content: flex-end;
+}
+
+.application-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.detail-group p {
+  font-size: 0.875rem;
+  color: #212529;
+  margin: 0;
+}
+
+.cover-letter {
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.resume-link {
+  color: #2c7be5;
+  text-decoration: none;
+}
+
+.resume-link:hover {
+  text-decoration: underline;
+}
+
+.no-data {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.btn-close {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background-color: #5a6268;
 }
 </style>
