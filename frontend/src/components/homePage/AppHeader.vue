@@ -18,7 +18,7 @@
           active-class="nav-link-active"
         >
           <BriefcaseIcon class="nav-icon" />
-          <span>Find Job</span>
+          <span>Management</span>
         </router-link>
 
         <router-link
@@ -38,7 +38,7 @@
           <UserGroupIcon class="nav-icon" />
           <span>Candidates</span>
         </router-link>
-
+<!-- 
         <router-link to="/" class="nav-link" active-class="nav-link-active">
           <CurrencyDollarIcon class="nav-icon" />
           <span>Pricing</span>
@@ -47,7 +47,7 @@
         <router-link to="/" class="nav-link" active-class="nav-link-active">
           <LifebuoyIcon class="nav-icon" />
           <span>Support</span>
-        </router-link>
+        </router-link> -->
       </div>
 
       <div class="nav-contact">

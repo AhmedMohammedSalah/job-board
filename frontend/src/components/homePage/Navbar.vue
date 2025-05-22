@@ -132,7 +132,7 @@ onMounted(() => {
 });
 
 const navigateToLogin = () => router.push("/login");
-const navigateToPostJob = () => router.push("/post-job");
+const navigateToPostJob = () => router.push("/login");
 
 const logout = async () => {
   try {

@@ -53,7 +53,7 @@ export default {
         route: "Postjob",
       },
       {
-        label: "My Jobs",
+        label: "MyJobs",
         icon: "bi-briefcase",
         isActive: props.initialActive === 3,
         route: "MyJobs",

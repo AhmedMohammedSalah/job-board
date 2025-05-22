@@ -38,7 +38,7 @@ const routes = [
     path: "/candidate",
     name: "candidate",
     component: CandidateLayout,
-    meta: { requiresAuth: true, role: "candidate" }, // Add meta to parent
+    meta: { requiresAuth: true, role: "candidate" }, 
     children: [
       {
         path: "",
@@ -91,7 +91,7 @@ const routes = [
     component: Page,
   },
   {
-    path: "/forget-password",
+    path: "/forgetpassword",
     name: "ForgetPassword",
     component: ForgetPassword,
     meta: { requiresGuest: true },

@@ -1,4 +1,5 @@
 <template>
+  <AppHeader />
   <div class="post-job-container">
     <SidebarComponent
       :initialActive="2"
@@ -202,9 +203,12 @@
       </div>
     </div>
   </div>
+  <AppFooter />
 </template>
 
 <script setup>
+import AppHeader from "../../components/homePage/AppHeader.vue";
+import AppFooter from "../../components/homePage/AppFooter.vue";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import SidebarComponent from "./SidebarComponent.vue";
@@ -387,13 +391,12 @@ const submitJob = async () => {
     isSubmitting.value = false;
   }
 };
-
 const handleNavigation = (index) => {
   console.log("Handling navigation with index:", index);
   const routes = [
-    "/employer/dashboard",
-    "/employer/jobs",
-    "/employer/post-job",
+    "/EmployersDashboard",
+    "/MyJobs",
+    "/PostJob",
   ];
 
   if (index < 0 || index >= routes.length) {
@@ -403,10 +406,10 @@ const handleNavigation = (index) => {
   }
 
   const targetRoute = routes[index];
-  console.log("Navigating to:", targetRoute);
+  console.log("Navigating to:", index);
 
   try {
-    router.push(targetRoute).catch((err) => {
+    router.push(index).catch((err) => {
       console.error("Router push error:", err);
       error.value = `Failed to navigate to ${targetRoute}`;
     });
@@ -435,7 +438,8 @@ onMounted(() => {
   } else {
     fetchCategories();
   }
-});
+} );
+
 </script>
 
 <style scoped>

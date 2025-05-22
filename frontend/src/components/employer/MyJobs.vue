@@ -1,6 +1,12 @@
 <template>
+  <AppHeader />
   <div class="d-flex">
-    <SidebarComponent />
+        <SidebarComponent
+      :initialActive="0"
+      @navigate="handleNavigation"
+      @logout="handleLogout"
+    />
+
     <div class="job-list-container">
       <div v-if="isLoading" class="loading-overlay">
         <div class="loading-spinner"></div>
@@ -193,9 +199,12 @@
       </div>
     </div>
   </div>
+  <AppFooter />
 </template>
 
 <script setup>
+import AppHeader from "../../components/homePage/AppHeader.vue";
+import AppFooter from "../../components/homePage/AppFooter.vue";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../../services/authStore";
@@ -347,7 +356,43 @@ onMounted(async () => {
   }
   fetchJobs();
   document.addEventListener("click", closeDropdownOnClickOutside);
-});
+} );
+const handleNavigation = (index) => {
+  console.log("Handling navigation with index:", index);
+  const routes = [
+    "/EmployersDashboard",
+    "/MyJobs",
+    "/PostJob",
+  ];
+
+  if (index < 0 || index >= routes.length) {
+    console.error("Invalid navigation index:", index);
+    error.value = "Invalid navigation option selected";
+    return;
+  }
+
+  const targetRoute = routes[index];
+  console.log("Navigating to:", index);
+
+  try {
+    router.push(index).catch((err) => {
+      console.error("Router push error:", err);
+      error.value = `Failed to navigate to ${targetRoute}`;
+    });
+  } catch (err) {
+    console.error("Navigation error:", err);
+    error.value = "Navigation failed";
+  }
+};
+
+const handleLogout = () => {
+  console.log("Logging out");
+  clearToken();
+  router.push("/login").catch((err) => {
+    console.error("Logout navigation error:", err);
+    error.value = "Failed to navigate to login";
+  });
+};
 
 onUnmounted(() => {
   document.removeEventListener("click", closeDropdownOnClickOutside);

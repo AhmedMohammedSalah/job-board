@@ -1,4 +1,5 @@
 <template>
+  <AppHeader />
   <div class="error-page d-flex align-items-center justify-content-center min-vh-100 bg-light">
     <div class="container">
       <div class="row justify-content-center">
@@ -65,11 +66,18 @@
       </div>
     </div>
   </div>
+  <AppFooter />
 </template>
 
 <script>
+import AppHeader from '../../components/homePage/AppHeader.vue';
+import AppFooter from '../../components/homePage/AppFooter.vue';
 export default {
   name: 'NotFoundPage',
+  components: {
+    AppHeader,
+    AppFooter
+  },
   mounted() {
     // Add animation class after component mounts
     setTimeout(() => {

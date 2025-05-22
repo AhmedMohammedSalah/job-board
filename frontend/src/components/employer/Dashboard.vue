@@ -1,4 +1,5 @@
 <template>
+  <AppHeader />
   <div class="dashboard-container">
     <SidebarComponent
       :initialActive="0"
@@ -50,7 +51,7 @@
           <div class="jobs-container">
             <div class="jobs-header">
               <h2>Recently Posted Jobs</h2>
-              <router-link to="/employer/jobs" class="view-all">
+              <router-link to="/myjobs" class="view-all">
                 View all
                 <i class="bi bi-chevron-right"></i>
               </router-link>
@@ -233,9 +234,13 @@
       </div>
     </div>
   </div>
+  <AppFooter />
 </template>
 
 <script setup>
+// import AppHeader and AppFooter 
+import AppHeader from "../../components/homePage/AppHeader.vue";
+import AppFooter from "../../components/homePage/AppFooter.vue";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import SidebarComponent from "./SidebarComponent.vue";
@@ -453,9 +458,9 @@ const closeApplications = () => {
 const handleNavigation = (index) => {
   console.log("Handling navigation with index:", index);
   const routes = [
-    "/employer/dashboard",
-    "/employer/jobs",
-    "/employer/post-job",
+    "/EmployersDashboard",
+    "/MyJobs",
+    "/PostJob",
   ];
 
   if (index < 0 || index >= routes.length) {
@@ -465,10 +470,10 @@ const handleNavigation = (index) => {
   }
 
   const targetRoute = routes[index];
-  console.log("Navigating to:", targetRoute);
+  console.log("Navigating to:", index);
 
   try {
-    router.push(targetRoute).catch((err) => {
+    router.push(index).catch((err) => {
       console.error("Router push error:", err);
       error.value = `Failed to navigate to ${targetRoute}`;
     });
